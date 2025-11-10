@@ -3,3 +3,6 @@ dist/
 temp/
 **/**/*.log
 config.js
+/generated/prisma
+.env
+config/.env.*
