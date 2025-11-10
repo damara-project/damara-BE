@@ -49,6 +49,7 @@
     "fs-extra": "^11.3.2",
     "jiti": "^2.6.1",
     "nodemon": "^3.1.10",
+    "prisma": "^6.19.0",
     "supertest": "^7.1.4",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
