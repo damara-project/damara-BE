@@ -1,72 +1,68 @@
-import { isString } from 'jet-validators';
-import { parseObject, TParseOnError } from 'jet-validators/utils';
+export type UUID = string;
 
-import { isRelationalKey, transIsDate } from '@src/common/util/validators';
-import { IModel } from './common/types';
-
-
-/******************************************************************************
-                                 Constants
-******************************************************************************/
-
-const DEFAULT_USER_VALS = (): IUser => ({
-  id: -1,
-  name: '',
-  created: new Date(),
-  email: '',
-});
-
-
-/******************************************************************************
-                                  Types
-******************************************************************************/
-
-export interface IUser extends IModel {
-  name: string;
+// DB 컬럼과 1:1 매핑되는 Row 타입 (snake_case)
+export interface UserRow {
+  id: UUID;
   email: string;
+  password_hash: string;
+  nickname: string;
+  department: string | null;
+  student_id: string | null;
+  avatar_url: string | null;
+  created_at: string; // ISO string (TIMESTAMPTZ)
+  updated_at: string; // ISO string (TIMESTAMPTZ)
 }
 
-
-/******************************************************************************
-                                  Setup
-******************************************************************************/
-
-// Initialize the "parseUser" function
-const parseUser = parseObject<IUser>({
-  id: isRelationalKey,
-  name: isString,
-  email: isString,
-  created: transIsDate,
-});
-
-
-/******************************************************************************
-                                 Functions
-******************************************************************************/
-
-/**
- * New user object.
- */
-function __new__(user?: Partial<IUser>): IUser {
-  const retVal = { ...DEFAULT_USER_VALS(), ...user };
-  return parseUser(retVal, errors => {
-    throw new Error('Setup new user failed ' + JSON.stringify(errors, null, 2));
-  });
+// 애플리케이션에서 쓰기 편한 camelCase 도메인 모델
+export interface User {
+  id: UUID;
+  email: string;
+  passwordHash: string;
+  nickname: string;
+  department?: string | null;
+  studentId?: string | null;
+  avatarUrl?: string | null;
+  createdAt: string; // ISO
+  updatedAt: string; // ISO
 }
 
-/**
- * Check is a user object. For the route validation.
- */
-function test(arg: unknown, errCb?: TParseOnError): arg is IUser {
-  return !!parseUser(arg, errCb);
+//사용자 생성시 필요한 타입
+export interface createUserInput {
+  email: string;
+  password: string;
+  nickname: string;
+  department: string;
+  studentId: string;
 }
 
+//사용자 부분 업데이트 시 필요한 타입
+export interface updateUserInput {
+  nickname: string;
+  department: string;
+  studentId: string;
+  avatarUrl: string;
 
-/******************************************************************************
-                                Export default
-******************************************************************************/
+  //password 업데이트는 허용 안할램
+}
 
-export default {
-  new: __new__,
-  test,
-} as const;
+export interface updateUserInput {
+  email: string;
+  password: string;
+  nickname: string;
+  department: string;
+  studentId: string;
+  avatarUrl: string;
+}
+
+//client Domain Mapping
+export function mapUser(user: UserRow): User {
+  return {
+    ...user,
+    passwordHash: user.password_hash,
+    createdAt: user.created_at,
+    updatedAt: user.updated_at,
+    department: user.department ?? null,
+    studentId: user.student_id ?? null,
+    avatarUrl: user.avatar_url ?? null,
+  };
+}
