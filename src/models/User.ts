@@ -29,10 +29,11 @@ export interface User {
 //사용자 생성시 필요한 타입
 export interface createUserInput {
   email: string;
-  password: string;
+  passwordHash: string;
   nickname: string;
   department: string;
   studentId: string;
+  avatarUrl: string;
 }
 
 //사용자 부분 업데이트 시 필요한 타입

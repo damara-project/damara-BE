@@ -35,3 +35,14 @@ export class ValidationError extends RouteError {
     super(HttpStatusCodes.BAD_REQUEST, msg);
   }
 }
+
+/**
+ * Email already exists error (PostgreSQL unique constraint violation).
+ */
+export class EmailAlreadyExistsError extends RouteError {
+  public static MESSAGE = 'EMAIL_ALREADY_EXISTS';
+
+  public constructor() {
+    super(HttpStatusCodes.CONFLICT, EmailAlreadyExistsError.MESSAGE);
+  }
+}
