@@ -27,7 +27,7 @@ export interface User {
 }
 
 //사용자 생성시 필요한 타입
-export interface createUserInput {
+export interface CreateUserInput {
   email: string;
   passwordHash: string;
   nickname: string;
@@ -36,23 +36,14 @@ export interface createUserInput {
   avatarUrl: string;
 }
 
-//사용자 부분 업데이트 시 필요한 타입
-export interface updateUserInput {
-  nickname: string;
-  department: string;
-  studentId: string;
-  avatarUrl: string;
-
-  //password 업데이트는 허용 안할램
-}
-
-export interface updateUserInput {
-  email: string;
-  password: string;
-  nickname: string;
-  department: string;
-  studentId: string;
-  avatarUrl: string;
+//사용자 부분 업데이트 시 필요한 타입 (모든 필드는 optional)
+export interface UpdateUserInput {
+  email?: string;
+  nickname?: string;
+  department?: string;
+  studentId?: string;
+  avatarUrl?: string;
+  // password 업데이트는 허용 안함
 }
 
 //client Domain Mapping
@@ -67,3 +58,5 @@ export function mapUser(user: UserRow): User {
     avatarUrl: user.avatar_url ?? null,
   };
 }
+
+//

@@ -1,5 +1,11 @@
 import { query, DatabaseError } from "../db";
-import { User, UserRow, mapUser, CreateUserInput } from "@src/models/User";
+import {
+  User,
+  UserRow,
+  mapUser,
+  CreateUserInput,
+  UpdateUserInput,
+} from "@src/models/User";
 import { EmailAlreadyExistsError } from "@src/common/util/route-errors";
 
 //RETURNING 동일한 컬럼에 여러번 쓰는 중복을 제거.
@@ -19,6 +25,7 @@ const USER_COLUMNS = {
 } as const;
 
 export const UserRepo = {
+  //create 함수
   async create(data: CreateUserInput): Promise<User> {
     const text = `
      INSERT INTO users (
@@ -50,5 +57,27 @@ export const UserRepo = {
       }
       throw e;
     }
+  },
+  async findByEmail(email: string): Promise<User | null> {
+    const text = `SELECT ${Object.values(USER_COLUMNS).join(
+      ", "
+    )} FROM users WHERE email = $1`;
+    const params = [email];
+    const res = await query<UserRow>(text, params);
+    return res.rows.length > 0 ? mapUser(res.rows[0]) : null;
+  },
+  async update(id: string, patch: UpdateUserInput): Promise<User> {
+    const text = `
+    UPDATE users SET ${Object.entries(patch)
+      .map(
+        ([key, value]) =>
+          `${USER_COLUMNS[key as keyof typeof USER_COLUMNS]} = $${index + 1}`
+      )
+      .join(", ")} WHERE id = $1 RETURNING ${Object.values(USER_COLUMNS).join(
+      ", "
+    )}`;
+    const params = [id, ...Object.values(patch)];
+    const res = await query<UserRow>(text, params);
+    return mapUser(res.rows[0]);
   },
 };
