@@ -93,7 +93,7 @@ export default tseslint.config(
       'no-console': 1,
       'no-extra-boolean-cast': 0,
       'indent': ['warn', 2],
-      'quotes': ['warn', 'single'],
+      'quotes': 0, // single/double quote 자유롭게 사용 가능
       'n/no-process-env': 1,
       'n/no-missing-import': 0,
       'n/no-unpublished-import': 0,

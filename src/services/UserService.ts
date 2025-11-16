@@ -1,7 +1,6 @@
 import { UserRepo } from "@src/repos/UserRepo";
 import { CreateUserInput, UpdateUserInput, User } from "@src/models/User";
 import bcrypt from "bcrypt";
-import { buildUpdateSet } from "@src/routes/common/util/sql";
 import {
   EmailAlreadyExistsError,
   RouteError,
