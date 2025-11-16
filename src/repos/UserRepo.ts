@@ -7,6 +7,7 @@ import {
   UpdateUserInput,
 } from "@src/models/User";
 import { EmailAlreadyExistsError } from "@src/common/util/route-errors";
+import { buildUpdateSet } from "@src/routes/common/util/sql";
 
 //RETURNING 동일한 컬럼에 여러번 쓰는 중복을 제거.
 
@@ -48,12 +49,9 @@ export const UserRepo = {
     try {
       const res = await query<UserRow>(text, params);
       return mapUser(res.rows[0]);
-    } catch (e: unknown) {
+    } catch (e) {
       if (e instanceof DatabaseError && e.code === "23505") {
-        // EmailAlreadyExistsError extends RouteError extends Error - safe
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const error = new EmailAlreadyExistsError() as Error;
-        throw error;
+        throw new EmailAlreadyExistsError();
       }
       throw e;
     }
@@ -67,17 +65,34 @@ export const UserRepo = {
     return res.rows.length > 0 ? mapUser(res.rows[0]) : null;
   },
   async update(id: string, patch: UpdateUserInput): Promise<User> {
-    const text = `
-    UPDATE users SET ${Object.entries(patch)
-      .map(
-        ([key, value]) =>
-          `${USER_COLUMNS[key as keyof typeof USER_COLUMNS]} = $${index + 1}`
-      )
-      .join(", ")} WHERE id = $1 RETURNING ${Object.values(USER_COLUMNS).join(
-      ", "
-    )}`;
-    const params = [id, ...Object.values(patch)];
+    // buildUpdateSet으로 SET 절과 값들 생성
+    const { setClause, values } = buildUpdateSet(
+      patch as Record<string, unknown>,
+      {
+        email: USER_COLUMNS.email,
+        nickname: USER_COLUMNS.nickname,
+        department: USER_COLUMNS.department,
+        studentId: USER_COLUMNS.studentId,
+        avatarUrl: USER_COLUMNS.avatarUrl,
+      }
+    );
+
+    // UPDATE 쿼리 생성
+    // setClause 예: "nickname = $1, department = $2"
+    // id는 마지막 파라미터로 ($n)
+    const text = `UPDATE users SET ${setClause} WHERE id = $${
+      values.length + 1
+    } RETURNING ${Object.values(USER_COLUMNS).join(", ")}`;
+
+    // 파라미터는 [값들..., id] 순서
+    const params = [...values, id];
+
     const res = await query<UserRow>(text, params);
     return mapUser(res.rows[0]);
+  },
+  async delete(id: string): Promise<void> {
+    const text = `DELETE FROM users WHERE id = $1`;
+    const params = [id];
+    await query(text, params);
   },
 };

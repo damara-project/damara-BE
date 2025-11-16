@@ -1,6 +1,12 @@
 import { UserRepo } from "@src/repos/UserRepo";
 import { CreateUserInput, UpdateUserInput, User } from "@src/models/User";
 import bcrypt from "bcrypt";
+import { buildUpdateSet } from "@src/routes/common/util/sql";
+import {
+  EmailAlreadyExistsError,
+  RouteError,
+} from "@src/common/util/route-errors";
+import HttpStatusCodes from "@src/common/constants/HttpStatusCodes";
 
 export const UserService = {
   /*
@@ -27,7 +33,7 @@ export const UserService = {
     //1. 이메일 중복 검사
     const exists = await UserRepo.findByEmail(data.email);
     if (exists) {
-      throw new Error("EMAIL_ALREADY_EXISTS");
+      throw new EmailAlreadyExistsError();
     }
     //2. 비밀번호 해싱
     const hashedPassword = await bcrypt.hash(data.passwordHash, 10);
@@ -41,10 +47,10 @@ export const UserService = {
   },
 
   //이메일로 사용자 조회하는 함수
-  async getUserByEmail(email: string): Promise<User | null> {
+  async getUserByEmail(email: string): Promise<User> {
     const user = await UserRepo.findByEmail(email);
     if (!user) {
-      throw new Error("USER_NOT_FOUND");
+      throw new RouteError(HttpStatusCodes.NOT_FOUND, "USER_NOT_FOUND");
     }
     return user;
   },
