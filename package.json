@@ -4,7 +4,7 @@
   "scripts": {
     "build": "ts-node ./scripts/build.ts",
     "clean-install": "rm -rf ./node_modules && rm -r package-lock.json && npm i",
-    "dev": "NODE_ENV=development ts-node ./src",
+    "dev": "NODE_ENV=development ts-node ./src/server.ts",
     "dev:hot": "nodemon --exec \"npm run dev\" --watch ./src --ext .ts",
     "lint": "eslint .",
     "start": "NODE_ENV=production node -r ./config.js ./dist",
@@ -30,7 +30,10 @@
     "logger": "^0.0.1",
     "module-alias": "^2.2.3",
     "morgan": "^1.10.1",
+    "mysql2": "^3.15.3",
+    "pg": "^8.16.3",
     "routes": "^2.1.0",
+    "sequelize": "^6.37.7",
     "zod": "^4.1.12"
   },
   "devDependencies": {
@@ -46,6 +49,7 @@
     "@types/module-alias": "^2.0.4",
     "@types/morgan": "^1.9.10",
     "@types/node": "^24.10.0",
+    "@types/pg": "^8.15.6",
     "@types/supertest": "^6.0.3",
     "eslint": "^9.39.1",
     "eslint-plugin-n": "^17.23.1",

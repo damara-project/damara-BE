@@ -1,62 +1,113 @@
-export type UUID = string;
+// src/models/UserModel.ts
 
-// DB 컬럼과 1:1 매핑되는 Row 타입 (snake_case)
-export interface UserRow {
-  id: UUID;
+import { DataTypes, Model, Optional, Sequelize } from "sequelize";
+import ENV from "@src/common/constants/ENV";
+
+/**
+ * Sequelize 인스턴스.
+ * - 실제 DB 연결 정보는 ENV.DatabaseUrl을 사용한다.
+ */
+const sequelize = new Sequelize(ENV.DatabaseUrl, {
+  logging: false,
+});
+
+// ----------------------------
+// TypeScript 타입 정의
+// ----------------------------
+
+// DB 컬럼 기반 attributes
+// 실제 users 테이블의 컬럼 스키마를 TypeScript로 옮겨온 타입
+export interface UserAttributes {
+  id: string;
   email: string;
-  password_hash: string;
+  passwordHash: string;
   nickname: string;
   department: string | null;
-  student_id: string | null;
-  avatar_url: string | null;
-  created_at: string; // ISO string (TIMESTAMPTZ)
-  updated_at: string; // ISO string (TIMESTAMPTZ)
+  studentId: string | null;
+  avatarUrl: string | null;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
-// 애플리케이션에서 쓰기 편한 camelCase 도메인 모델
-export interface User {
-  id: UUID;
-  email: string;
-  passwordHash: string;
-  nickname: string;
-  department?: string | null;
-  studentId?: string | null;
-  avatarUrl?: string | null;
-  createdAt: string; // ISO
-  updatedAt: string; // ISO
+// Create 시 필요한 값(자동 생성되는 id 제거)
+// Optional<T, K>를 이용해 생성 시 선택 입력 필드를 지정한다.
+export type UserCreationAttributes = Optional<
+  UserAttributes,
+  "id" | "department" | "studentId" | "avatarUrl" | "createdAt" | "updatedAt"
+>;
+
+// Sequelize 모델 타입 선언
+// Model<Attributes, CreationAttributes>를 상속하면
+// UserModel.create(...) 같은 ORM 메서드에서 타입 안전성을 확보할 수 있다.
+export class UserModel
+  extends Model<UserAttributes, UserCreationAttributes>
+  implements UserAttributes
+{
+  public id!: string;
+  public email!: string;
+  public passwordHash!: string;
+  public nickname!: string;
+  public department!: string | null;
+  public studentId!: string | null;
+  public avatarUrl!: string | null;
+
+  public readonly createdAt!: Date;
+  public readonly updatedAt!: Date;
 }
 
-//사용자 생성시 필요한 타입
-export interface CreateUserInput {
-  email: string;
-  passwordHash: string;
-  nickname: string;
-  department?: string;
-  studentId?: string;
-  avatarUrl?: string;
-}
+// ----------------------------
+// Sequelize 모델 초기화
+// init 메서드로 실제 테이블 컬럼 정의 + 옵션을 설정한다.
+// ----------------------------
+UserModel.init(
+  {
+    id: {
+      type: DataTypes.UUID,
+      primaryKey: true,
+      defaultValue: DataTypes.UUIDV4,
+    },
 
-//사용자 부분 업데이트 시 필요한 타입 (모든 필드는 optional)
-export interface UpdateUserInput {
-  email?: string;
-  nickname?: string;
-  department?: string;
-  studentId?: string;
-  avatarUrl?: string;
-  // password 업데이트는 허용 안함
-}
+    email: {
+      type: DataTypes.STRING(255),
+      allowNull: false,
+      unique: true,
+    },
 
-//client Domain Mapping
-export function mapUser(user: UserRow): User {
-  return {
-    ...user,
-    passwordHash: user.password_hash,
-    createdAt: user.created_at,
-    updatedAt: user.updated_at,
-    department: user.department ?? null,
-    studentId: user.student_id ?? null,
-    avatarUrl: user.avatar_url ?? null,
-  };
-}
+    passwordHash: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      field: "password_hash", // actual DB column name
+    },
 
-//
+    nickname: {
+      type: DataTypes.STRING(50),
+      allowNull: false,
+    },
+
+    department: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+    },
+
+    studentId: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+      field: "student_id",
+    },
+
+    avatarUrl: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+      field: "avatar_url",
+    },
+  },
+
+  {
+    sequelize,
+    tableName: "users",
+    timestamps: true, // createdAt, updatedAt 자동 관리
+    underscored: true, // created_at / updated_at 자동 snake_case
+  }
+);
+
+export default UserModel;
