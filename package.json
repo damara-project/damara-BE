@@ -27,6 +27,7 @@
     "jet-paths": "^1.1.0",
     "jet-validators": "^1.4.3",
     "jsonfile": "^6.2.0",
+    "logger": "^0.0.1",
     "module-alias": "^2.2.3",
     "morgan": "^1.10.1",
     "routes": "^2.1.0",

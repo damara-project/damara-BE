@@ -34,9 +34,9 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
     });
   }
 
-  console.error("[UNHANDLED ERROR]", err);
-
   return res
     .status(HttpStatusCodes.INTERNAL_SERVER_ERROR)
     .json({ error: "INTERNAL_SERVER_ERROR" });
 });
+
+export default app;
