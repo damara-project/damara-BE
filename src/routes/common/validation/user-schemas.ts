@@ -15,6 +15,10 @@ export const createUserSchema = z.object({
 //타입 추론?
 export type CreateUserReq = z.infer<typeof createUserSchema>;
 
+/**
+ * 추론은 왜 하냐면
+ */
+
 //2. 사용자 수정 요청 타입
 export const updateUserSchema = z.object({
   user: z.object({
@@ -26,3 +30,5 @@ export const updateUserSchema = z.object({
     avatarUrl: z.string().optional(),
   }),
 });
+
+export type UpdateUserReq = z.infer<typeof updateUserSchema>;

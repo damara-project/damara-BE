@@ -31,9 +31,9 @@ export interface CreateUserInput {
   email: string;
   passwordHash: string;
   nickname: string;
-  department: string;
-  studentId: string;
-  avatarUrl: string;
+  department?: string;
+  studentId?: string;
+  avatarUrl?: string;
 }
 
 //사용자 부분 업데이트 시 필요한 타입 (모든 필드는 optional)
