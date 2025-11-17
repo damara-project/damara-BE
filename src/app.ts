@@ -12,13 +12,31 @@ const app = express();
  */
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(Paths.Public));
 
 /**
  * API Routes
+ *
+ * Paths.Base는 /api 이고, BaseRouter는 @src/routes/index.ts 에 있는 라우터이다.
+ *    따라서, /api 경로로 들어오면 @src/routes/index.ts 에 있는 라우터로 처리된다.  (BaseRouter)
+ 
+ *
  */
 app.use(Paths.Base, BaseRouter);
 
 /**
- * Error Handling
+ * Error Handling (Centralized)
  */
+
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+  if (err instanceof RouteError) {
+    return res.status(err.status).json({
+      error: err.message,
+    });
+  }
+
+  console.error("[UNHANDLED ERROR]", err);
+
+  return res
+    .status(HttpStatusCodes.INTERNAL_SERVER_ERROR)
+    .json({ error: "INTERNAL_SERVER_ERROR" });
+});
