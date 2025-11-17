@@ -90,9 +90,20 @@ export const UserRepo = {
     const res = await query<UserRow>(text, params);
     return mapUser(res.rows[0]);
   },
+
   async delete(id: string): Promise<void> {
     const text = `DELETE FROM users WHERE id = $1`;
     const params = [id];
     await query(text, params);
+  },
+
+  //사용자 전체 조회를 위한 조회함수. 페이지네이션을 위해 limit과 offset을 받는다.
+  async list(limit = 20, offset = 0): Promise<User[]> {
+    const text = `SELECT ${Object.values(USER_COLUMNS).join(
+      ", "
+    )} FROM users ORDER BY created_at DESC LIMIT $1 OFFSET $2`;
+    const params = [limit, offset];
+    const res = await query<UserRow>(text, params);
+    return res.rows.map(mapUser);
   },
 };

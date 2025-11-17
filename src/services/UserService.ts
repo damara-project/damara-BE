@@ -64,4 +64,10 @@ export const UserService = {
   async deleteUser(id: string): Promise<void> {
     await UserRepo.delete(id);
   },
+
+  //사용자 조회함수
+  async listUsers(limit = 20, offset = 0): Promise<User[]> {
+    const users = await UserRepo.list(limit, offset);
+    return users;
+  },
 };

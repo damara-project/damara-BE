@@ -29,6 +29,7 @@
     "jsonfile": "^6.2.0",
     "module-alias": "^2.2.3",
     "morgan": "^1.10.1",
+    "routes": "^2.1.0",
     "zod": "^4.1.12"
   },
   "devDependencies": {

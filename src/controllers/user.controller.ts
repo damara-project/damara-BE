@@ -47,6 +47,23 @@ export async function createUser(
   } catch (error) {
     // 에러를 전역 에러 핸들러로 전달
     // server.ts의 에러 핸들러가 RouteError를 자동으로 처리함
+
+    //원래는 에러를 다 잡아줬어야했는데, if(error instanceof RouteError) 이렇게 처리해줬어야했음
+    //이렇게 하면 전역 에러 핸들러에서 자동으로 처리됨..
+    next(error);
+  }
+}
+
+//전체 조회 함수
+export async function getAllUsers(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const users = await UserService.listUsers();
+    res.status(HttpStatusCodes.OK).json(users);
+  } catch (error) {
     next(error);
   }
 }
