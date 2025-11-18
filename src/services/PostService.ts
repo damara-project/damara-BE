@@ -1,0 +1,72 @@
+// src/services/PostService.ts
+
+import { PostRepo } from "@src/repos/PostRepo";
+import { PostCreationAttributes } from "@src/models/Post";
+import { RouteError } from "@src/common/util/route-errors";
+import HttpStatusCodes from "@src/common/constants/HttpStatusCodes";
+import UserModel from "@src/models/User";
+
+export const PostService = {
+  /**
+   * 공동구매 상품 등록
+   * - 작성자가 존재하는지 확인
+   * - 이미지 URL 배열을 PostRepo로 전달
+   */
+  async createPost(
+    data: PostCreationAttributes,
+    imageUrls: string[] = [],
+  ) {
+    // 작성자 존재 확인
+    const author = await UserModel.findByPk(data.authorId);
+    if (!author) {
+      throw new RouteError(
+        HttpStatusCodes.NOT_FOUND,
+        "AUTHOR_NOT_FOUND",
+      );
+    }
+
+    const post = await PostRepo.create(data, imageUrls);
+    return post?.get();
+  },
+
+  /**
+   * ID로 상품 조회
+   */
+  async getPostById(id: string) {
+    const post = await PostRepo.findById(id);
+    if (!post) {
+      throw new RouteError(HttpStatusCodes.NOT_FOUND, "POST_NOT_FOUND");
+    }
+    return post;
+  },
+
+  /**
+   * 전체 조회 + pagination
+   */
+  async listPosts(limit = 20, offset = 0) {
+    return await PostRepo.list(limit, offset);
+  },
+
+  /**
+   * 작성자 ID로 조회
+   */
+  async listPostsByAuthor(authorId: string, limit = 20, offset = 0) {
+    return await PostRepo.findByAuthorId(authorId, limit, offset);
+  },
+
+  /**
+   * 부분 업데이트
+   */
+  async updatePost(id: string, patch: Partial<PostCreationAttributes>) {
+    const updatedPost = await PostRepo.update(id, patch);
+    return updatedPost?.get();
+  },
+
+  /**
+   * 삭제
+   */
+  async deletePost(id: string) {
+    await PostRepo.delete(id);
+  },
+};
+

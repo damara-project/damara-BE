@@ -16,6 +16,8 @@ import HttpStatusCodes from "@src/common/constants/HttpStatusCodes";
 import {
   createUserSchema,
   CreateUserReq,
+  updateUserSchema,
+  UpdateUserReq,
 } from "@src/routes/common/validation/user-schemas";
 
 /**
@@ -63,6 +65,48 @@ export async function getAllUsers(
   try {
     const users = await UserService.listUsers();
     res.status(HttpStatusCodes.OK).json(users);
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * 회원 수정 컨트롤러
+ * PUT /api/users/:id
+ * body: { user: { ... } }
+ */
+export async function updateUser(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { id } = req.params;
+    const validatedData = parseReq<UpdateUserReq>(updateUserSchema)(req.body);
+    const { user } = validatedData;
+
+    const updatedUser = await UserService.updateUser(id, user);
+
+    res.status(HttpStatusCodes.OK).json(updatedUser);
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * 회원 삭제 컨트롤러
+ * DELETE /api/users/:id
+ */
+export async function deleteUser(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { id } = req.params;
+    await UserService.deleteUser(id);
+
+    res.status(HttpStatusCodes.NO_CONTENT).send();
   } catch (error) {
     next(error);
   }

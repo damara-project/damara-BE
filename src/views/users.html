@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="ko">
   <!-- Head -->
   <head>
-    <meta charset="UTF-8">
-    <title>Users</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>회원 관리</title>
     <link rel="stylesheet" type="text/css" href="/stylesheets/users.css" />
 
     <!-- Handlebars -->
@@ -26,107 +26,224 @@
 
   <!-- Body -->
   <body>
+    <div class="container mt-4">
+      <h1 class="mb-4">회원 관리</h1>
 
-    <!-- Add Users -->
-    <div class="users-column add-user-col">
-      <div class="column-header">
-        Add User:
-      </div>
-      <div>
-        <input
-          id="name-input"
-          type="text"
-          class="form-control"
-          placeholder="Name"
-        />
-      </div>
-      <div>
-        <input
-          id="email-input"
-          type="email"
-          class="form-control"
-          placeholder="Email"
-        />
-      </div>
-      <div>
-        <button
-          id="add-user-btn"
-          class="btn btn-success"
-        >
-          Add
-        </button>
-      </div>
-    </div>
-
-    <!-- Display Users -->
-    <div class="users-column">
-      <div class="column-header">
-        Users:
-      </div>
-
-      <div id="all-users-anchor"></div>
-      <script
-        id="all-users-template"
-        type="text/x-handlebars-template"
-      >
-        {{#each users}}
-          <div class="user-display-ele">
-            <div class="normal-view">
-              <div><b>Name:</b> {{name}}</div>
-              <div><b>Email:</b> {{email}}</div>
-              <div><b>Created:</b> {{createdFormatted}}</div>
-              <button
-                type="button"
-                class="btn btn-primary edit-user-btn"
-                data-user-id="{{id}}"
-              >
-                Edit
-              </button>
-              <button
-                class="btn btn-danger delete-user-btn"
-                data-user-id="{{id}}"
-              >
-                Delete
-              </button>
+      <!-- 회원 등록 폼 -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h3>회원 등록</h3>
+        </div>
+        <div class="card-body">
+          <form id="create-user-form">
+            <div class="mb-3">
+              <label for="user-email" class="form-label">이메일</label>
+              <input
+                type="email"
+                class="form-control"
+                id="user-email"
+                placeholder="example@mju.ac.kr"
+                required
+              />
             </div>
 
-            <div class="edit-view">
-              <div>
-                Name:&nbsp;
+            <div class="mb-3">
+              <label for="user-password-hash" class="form-label">비밀번호 (8자 이상)</label>
+              <input
+                type="password"
+                class="form-control"
+                id="user-password-hash"
+                placeholder="비밀번호 입력"
+                minlength="8"
+                required
+              />
+            </div>
+
+            <div class="mb-3">
+              <label for="user-nickname" class="form-label">닉네임</label>
+              <input
+                type="text"
+                class="form-control"
+                id="user-nickname"
+                placeholder="닉네임 입력"
+                minlength="2"
+                required
+              />
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="user-department" class="form-label">학과 (선택사항)</label>
                 <input
                   type="text"
-                  class="form-control name-edit-input"
-                  value="{{name}}"
+                  class="form-control"
+                  id="user-department"
+                  placeholder="예: 컴퓨터공학과"
                 />
               </div>
-              <div class="email-edit">
-                Email:&nbsp;
-                <input
-                  type="email"
-                  class="form-control email-edit-input"
-                  value="{{email}}"
-                />
-              </div>
-              <button
-                class="btn btn-primary submit-edit-btn"
-                data-user-id="{{id}}"
-                data-user-created="{{created}}"
-              >
-                Submit
-              </button>
-              <button
-                class="btn btn-secondary cancel-edit-btn"
-                data-user-id="{{id}}"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        {{/each}}
-      </script>
-    </div>
-  </body>
 
-  <script src="scripts/http.js"></script>
-  <script src="scripts/users.js"></script>
+              <div class="col-md-6 mb-3">
+                <label for="user-student-id" class="form-label">학번 (선택사항)</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="user-student-id"
+                  placeholder="예: 20241234"
+                />
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="user-avatar-url" class="form-label">프로필 이미지 URL (선택사항)</label>
+              <input
+                type="url"
+                class="form-control"
+                id="user-avatar-url"
+                placeholder="https://example.com/avatar.jpg"
+              />
+            </div>
+
+            <button type="submit" class="btn btn-primary">등록</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- 회원 목록 -->
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h3 class="mb-0">회원 목록</h3>
+          <button id="refresh-users-btn" class="btn btn-sm btn-outline-primary">
+            새로고침
+          </button>
+        </div>
+        <div class="card-body">
+          <div id="all-users-anchor"></div>
+          <script id="all-users-template" type="text/x-handlebars-template">
+            {{#each users}}
+              <div class="user-item mb-4 p-3 border rounded">
+                <div class="normal-view">
+                  <div class="row">
+                    {{#if avatarUrl}}
+                      <div class="col-md-2">
+                        <img
+                          src="{{avatarUrl}}"
+                          alt="{{nickname}}"
+                          class="img-fluid rounded-circle"
+                          style="width: 100px; height: 100px; object-fit: cover;"
+                        />
+                      </div>
+                    {{/if}}
+                    <div class="{{#if avatarUrl}}col-md-10{{else}}col-12{{/if}}">
+                      <h4>{{nickname}}</h4>
+                      <div class="row">
+                        <div class="col-md-6">
+                          <p><strong>이메일:</strong> {{email}}</p>
+                          {{#if department}}
+                            <p><strong>학과:</strong> {{department}}</p>
+                          {{/if}}
+                          {{#if studentId}}
+                            <p><strong>학번:</strong> {{studentId}}</p>
+                          {{/if}}
+                        </div>
+                        <div class="col-md-6">
+                          <p><strong>ID:</strong> <small class="text-muted">{{id}}</small></p>
+                          <p><strong>가입일:</strong> {{formatDate createdAt}}</p>
+                          <p><strong>수정일:</strong> {{formatDate updatedAt}}</p>
+                        </div>
+                      </div>
+                      <div class="mt-2">
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-primary edit-user-btn"
+                          data-user-id="{{id}}"
+                        >
+                          수정
+                        </button>
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-danger delete-user-btn"
+                          data-user-id="{{id}}"
+                        >
+                          삭제
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="edit-view" style="display: none;">
+                  <form class="edit-user-form" data-user-id="{{id}}">
+                    <div class="mb-3">
+                      <label class="form-label">이메일</label>
+                      <input
+                        type="email"
+                        class="form-control user-email-edit"
+                        value="{{email}}"
+                        required
+                      />
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">비밀번호 (8자 이상, 변경하려면 입력)</label>
+                      <input
+                        type="password"
+                        class="form-control user-password-hash-edit"
+                        placeholder="비밀번호 변경 시에만 입력"
+                        minlength="8"
+                      />
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">닉네임</label>
+                      <input
+                        type="text"
+                        class="form-control user-nickname-edit"
+                        value="{{nickname}}"
+                        minlength="2"
+                        required
+                      />
+                    </div>
+                    <div class="row">
+                      <div class="col-md-6 mb-3">
+                        <label class="form-label">학과</label>
+                        <input
+                          type="text"
+                          class="form-control user-department-edit"
+                          value="{{department}}"
+                        />
+                      </div>
+                      <div class="col-md-6 mb-3">
+                        <label class="form-label">학번</label>
+                        <input
+                          type="text"
+                          class="form-control user-student-id-edit"
+                          value="{{studentId}}"
+                        />
+                      </div>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">프로필 이미지 URL</label>
+                      <input
+                        type="url"
+                        class="form-control user-avatar-url-edit"
+                        value="{{avatarUrl}}"
+                      />
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm">저장</button>
+                    <button
+                      type="button"
+                      class="btn btn-secondary btn-sm cancel-edit-btn"
+                      data-user-id="{{id}}"
+                    >
+                      취소
+                    </button>
+                  </form>
+                </div>
+              </div>
+            {{/each}}
+          </script>
+        </div>
+      </div>
+    </div>
+
+    <script src="scripts/users.js"></script>
+  </body>
 </html>

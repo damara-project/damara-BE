@@ -1,48 +1,35 @@
-body {
-  padding: 100px;
-  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+/* src/public/stylesheets/users.css */
+
+.user-item {
+  transition: box-shadow 0.2s;
 }
 
-body .users-column {
-  display: inline-block;
-  margin-right: 2em;
-  vertical-align: top;
+.user-item:hover {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-body .users-column .column-header {
-  padding-bottom: 5px;
-  font-weight: 700;
-  font-size: 1.2em;
+.user-item .img-fluid {
+  width: 100%;
+  height: 100px;
+  object-fit: cover;
 }
 
-
-/** Add User Column **/
-
-body .add-user-col input {
-  margin-bottom: 10px;
+.user-item .normal-view,
+.user-item .edit-view {
+  width: 100%;
 }
 
-body .add-user-col #add-user-btn {
-  margin-top: 2px;
-  margin-bottom: 10px;
+.user-item .normal-view h4 {
+  margin-bottom: 1rem;
+  color: #333;
 }
 
-
-/** Users Display Column **/
-
-.email-edit {
-  padding-bottom: 8px;
+.user-item .normal-view p {
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
 }
 
-body .users-column .user-display-ele {
-  padding-bottom: 10px;
-}
-
-body .users-column .user-display-ele button {
-  margin-top: 2px;
-  margin-bottom: 10px;
-}
-
-body .users-column .user-display-ele .edit-view {
-  display: none;
+.user-item .normal-view strong {
+  color: #495057;
+  margin-right: 0.5rem;
 }

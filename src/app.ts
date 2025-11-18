@@ -1,5 +1,6 @@
 import express from "express";
 import { Request, Response, NextFunction } from "express";
+import path from "path";
 import logger from "jet-logger";
 import BaseRouter from "./routes";
 import Paths from "./common/constants/Paths";
@@ -13,6 +14,36 @@ const app = express();
  */
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+/**
+ * Static Files (CSS, JS, Images)
+ * public/ 폴더의 정적 파일들을 서빙
+ * __dirname이 src/를 가리키므로 ../public 대신 public 사용
+ */
+app.use(express.static(path.join(__dirname, "public")));
+
+/**
+ * Views Directory
+ * views/ 폴더 경로 설정
+ * __dirname이 src/를 가리키므로 ../views 대신 views 사용
+ */
+const viewsDir = path.join(__dirname, "views");
+
+/**
+ * HTML Pages Routes
+ * 프론트엔드 HTML 페이지 서빙
+ */
+app.get("/users", (_: Request, res: Response) => {
+  return res.sendFile("users.html", { root: viewsDir });
+});
+
+app.get("/posts", (_: Request, res: Response) => {
+  return res.sendFile("posts.html", { root: viewsDir });
+});
+
+app.get("/", (_: Request, res: Response) => {
+  return res.redirect("/posts");
+});
 
 /**
  * API Routes

@@ -1,141 +1,189 @@
-// @ts-nocheck
+// src/public/scripts/users.js
 
-/******************************************************************************
-                                Constants
-******************************************************************************/
+const API_BASE = '/api/users';
 
-const DateFormatter = new Intl.DateTimeFormat('en-US', {
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
+/**
+ * 회원 목록 조회 및 렌더링
+ */
+async function loadUsers() {
+  try {
+    const response = await fetch(API_BASE);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const users = await response.json();
+
+    // Handlebars 헬퍼 등록
+    Handlebars.registerHelper('formatDate', function(dateString) {
+      if (!dateString) return '';
+      const date = new Date(dateString);
+      return date.toLocaleString('ko-KR');
+    });
+
+    const template = Handlebars.compile(
+      document.getElementById('all-users-template').innerHTML
+    );
+
+    document.getElementById('all-users-anchor').innerHTML = template({ users });
+  } catch (error) {
+    console.error('Error loading users:', error);
+    alert('회원 목록을 불러오는 중 오류가 발생했습니다.');
+  }
+}
+
+/**
+ * 회원 등록
+ */
+document.getElementById('create-user-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const email = document.getElementById('user-email').value.trim();
+  const passwordHash = document.getElementById('user-password-hash').value.trim();
+  const nickname = document.getElementById('user-nickname').value.trim();
+  const department = document.getElementById('user-department').value.trim();
+  const studentId = document.getElementById('user-student-id').value.trim();
+  const avatarUrl = document.getElementById('user-avatar-url').value.trim();
+
+  const userData = {
+    user: {
+      email,
+      passwordHash,
+      nickname,
+      ...(department && { department }),
+      ...(studentId && { studentId }),
+      ...(avatarUrl && { avatarUrl }),
+    },
+  };
+
+  try {
+    const response = await fetch(API_BASE, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(userData),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || `HTTP error! status: ${response.status}`);
+    }
+
+    alert('회원이 등록되었습니다.');
+    document.getElementById('create-user-form').reset();
+    loadUsers();
+  } catch (error) {
+    console.error('Error creating user:', error);
+    alert(`회원 등록 중 오류가 발생했습니다: ${error.message}`);
+  }
 });
 
-const formatDate = (date) => DateFormatter.format(new Date(date));
-
-
-/******************************************************************************
-                                  Run
-******************************************************************************/
-
-// Start
-displayUsers();
-
-
-/******************************************************************************
-                              Functions
-******************************************************************************/
-
 /**
- * Call api
+ * 회원 수정
  */
-function displayUsers() {
-  Http
-    .get('/api/users/all')
-    .then(resp => resp.json())
-    .then(resp => {
-      var allUsersTemplate = document.getElementById('all-users-template'),
-        allUsersTemplateHtml = allUsersTemplate.innerHTML,
-        template = Handlebars.compile(allUsersTemplateHtml);
-      var allUsersAnchor = document.getElementById('all-users-anchor');
-      allUsersAnchor.innerHTML = template({
-        users: resp.users.map(user => ({
-          ...user,
-          createdFormatted: formatDate(user.created),
-        })),
-      });
-    });
-}
+document.addEventListener('click', async (e) => {
+  if (e.target.classList.contains('edit-user-btn')) {
+    const userId = e.target.getAttribute('data-user-id');
+    const userItem = e.target.closest('.user-item');
+    const normalView = userItem.querySelector('.normal-view');
+    const editView = userItem.querySelector('.edit-view');
 
-// Setup event listener for button click
-document.addEventListener('click', event => {
-  event.preventDefault();
-  var ele = event.target;
-  if (ele.matches('#add-user-btn')) {
-    addUser();
-  } else if (ele.matches('.edit-user-btn')) {
-    showEditView(ele.parentNode.parentNode);
-  } else if (ele.matches('.cancel-edit-btn')) {
-    cancelEdit(ele.parentNode.parentNode);
-  } else if (ele.matches('.submit-edit-btn')) {
-    submitEdit(ele);
-  } else if (ele.matches('.delete-user-btn')) {
-    deleteUser(ele);
+    normalView.style.display = 'none';
+    editView.style.display = 'block';
   }
-}, false);
+
+  if (e.target.classList.contains('cancel-edit-btn')) {
+    const userId = e.target.getAttribute('data-user-id');
+    const userItem = e.target.closest('.user-item');
+    const normalView = userItem.querySelector('.normal-view');
+    const editView = userItem.querySelector('.edit-view');
+
+    normalView.style.display = 'block';
+    editView.style.display = 'none';
+  }
+
+  if (e.target.classList.contains('delete-user-btn')) {
+    if (!confirm('정말 삭제하시겠습니까?')) {
+      return;
+    }
+
+    const userId = e.target.getAttribute('data-user-id');
+
+    try {
+      const response = await fetch(`${API_BASE}/${userId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || `HTTP error! status: ${response.status}`);
+      }
+
+      alert('회원이 삭제되었습니다.');
+      loadUsers();
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      alert(`회원 삭제 중 오류가 발생했습니다: ${error.message}`);
+    }
+  }
+});
 
 /**
- * Add a new user.
+ * 회원 수정 폼 제출
  */
-function addUser() {
-  var nameInput = document.getElementById('name-input');
-  var emailInput = document.getElementById('email-input');
-  var data = {
-    user: {
-      id: -1,
-      name: nameInput.value,
-      email: emailInput.value,
-      created: new Date(),
-    },
-  };
-  // Call api
-  Http
-    .post('/api/users/add', data)
-    .then(() => {
-      nameInput.value = '';
-      emailInput.value = '';
-      displayUsers();
-    });
-}
+document.addEventListener('submit', async (e) => {
+  if (e.target.classList.contains('edit-user-form')) {
+    e.preventDefault();
+
+    const userId = e.target.getAttribute('data-user-id');
+    const email = e.target.querySelector('.user-email-edit').value.trim();
+    const passwordHash = e.target.querySelector('.user-password-hash-edit').value.trim();
+    const nickname = e.target.querySelector('.user-nickname-edit').value.trim();
+    const department = e.target.querySelector('.user-department-edit').value.trim();
+    const studentId = e.target.querySelector('.user-student-id-edit').value.trim();
+    const avatarUrl = e.target.querySelector('.user-avatar-url-edit').value.trim();
+
+    const userData = {
+      user: {
+        email,
+        nickname,
+        ...(passwordHash && { passwordHash }),
+        ...(department && { department }),
+        ...(studentId && { studentId }),
+        ...(avatarUrl && { avatarUrl }),
+      },
+    };
+
+    try {
+      const response = await fetch(`${API_BASE}/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || `HTTP error! status: ${response.status}`);
+      }
+
+      alert('회원 정보가 수정되었습니다.');
+      loadUsers();
+    } catch (error) {
+      console.error('Error updating user:', error);
+      alert(`회원 수정 중 오류가 발생했습니다: ${error.message}`);
+    }
+  }
+});
 
 /**
- * Show edit view.
+ * 새로고침 버튼
  */
-function showEditView(userEle) {
-  var normalView = userEle.getElementsByClassName('normal-view')[0];
-  var editView = userEle.getElementsByClassName('edit-view')[0];
-  normalView.style.display = 'none';
-  editView.style.display = 'block';
-}
+document.getElementById('refresh-users-btn').addEventListener('click', () => {
+  loadUsers();
+});
 
-/**
- * Cancel edit.
- */
-function cancelEdit(userEle) {
-  var normalView = userEle.getElementsByClassName('normal-view')[0];
-  var editView = userEle.getElementsByClassName('edit-view')[0];
-  normalView.style.display = 'block';
-  editView.style.display = 'none';
-}
+// 페이지 로드 시 회원 목록 불러오기
+loadUsers();
 
-/**
- * Submit edit.
- */
-function submitEdit(ele) {
-  var userEle = ele.parentNode.parentNode;
-  var nameInput = userEle.getElementsByClassName('name-edit-input')[0];
-  var emailInput = userEle.getElementsByClassName('email-edit-input')[0];
-  var id = ele.getAttribute('data-user-id');
-  var created = ele.getAttribute('data-user-created');
-    console.log(ele, created)
-  var data = {
-    user: {
-      id: Number(id),
-      name: nameInput.value,
-      email: emailInput.value,
-      created: new Date(created),
-    },
-  };
-	Http
-    .put('/api/users/update', data)
-    .then(() => displayUsers());
-}
-
-/**
- * Delete a user
- */
-function deleteUser(ele) {
-  var id = ele.getAttribute('data-user-id');
-	Http
-    .delete('/api/users/delete/' + id)
-    .then(() => displayUsers());
-}

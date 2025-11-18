@@ -1,6 +1,11 @@
 import { Router } from "express";
 
-import { createUser, getAllUsers } from "@src/controllers/user.controller";
+import {
+  createUser,
+  getAllUsers,
+  updateUser,
+  deleteUser,
+} from "@src/controllers/user.controller";
 
 const userRouter = Router();
 
@@ -9,5 +14,11 @@ userRouter.get("/", getAllUsers);
 
 // POST /api/users - 회원가입
 userRouter.post("/", createUser);
+
+// PUT /api/users/:id - 회원 수정
+userRouter.put("/:id", updateUser);
+
+// DELETE /api/users/:id - 회원 삭제
+userRouter.delete("/:id", deleteUser);
 
 export default userRouter;
