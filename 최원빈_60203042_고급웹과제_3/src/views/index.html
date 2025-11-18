@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<!-- 고급웹프로그래밍_3_최원빈_60203042 -->
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>명지대학교 공동구매 플랫폼</title>
+    <link rel="stylesheet" type="text/css" href="/stylesheets/main.css" />
+
+    <!-- Handlebars -->
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.7.8/handlebars.min.js"></script>
+
+    <!-- Bootstrap -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+      crossorigin="anonymous"
+    />
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+      crossorigin="anonymous"
+    ></script>
+  </head>
+
+  <body>
+    <!-- Toast Container -->
+    <div
+      class="toast-container position-fixed top-0 end-0 p-3"
+      style="z-index: 9999"
+    >
+      <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
+    </div>
+
+    <!-- 헤더 -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm mb-4">
+      <div class="container">
+        <a class="navbar-brand fw-bold" href="/">
+          <span style="font-size: 1.8rem">🍊</span> 다마라
+        </a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNav"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item me-2">
+              <a class="btn btn-outline-secondary btn-sm" href="/users">
+                회원 목록 보기
+              </a>
+            </li>
+            <li class="nav-item me-2">
+              <a class="btn btn-outline-success btn-sm" href="/posts">
+                등록한 상품 보기
+              </a>
+            </li>
+            <li class="nav-item">
+              <button
+                class="btn btn-outline-primary btn-sm me-2"
+                id="login-modal-btn"
+              >
+                로그인
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="btn btn-primary btn-sm" id="register-modal-btn">
+                회원가입
+              </button>
+            </li>
+            <li class="nav-item ms-2">
+              <span id="current-user-display" class="d-none align-middle">
+                <span
+                  id="user-nickname-display"
+                  class="fw-bold text-primary"
+                ></span>
+                <button
+                  class="btn btn-sm btn-outline-secondary ms-2"
+                  id="logout-btn"
+                >
+                  로그아웃
+                </button>
+              </span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container">
+      <!-- 현재 사용자 정보 영역 (로그인 시 표시) -->
+      <div id="user-info-section" class="d-none mb-4">
+        <div
+          class="card border-0 shadow-sm"
+          style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+        >
+          <div class="card-body text-white">
+            <div class="row align-items-center">
+              <div class="col-md-8">
+                <h5 class="mb-1 fw-bold">
+                  안녕하세요, <span id="current-user-nickname"></span>님! 👋
+                </h5>
+                <small class="opacity-75" id="current-user-email"></small>
+              </div>
+              <div class="col-md-4 text-end">
+                <button class="btn btn-light fw-bold" id="create-post-btn">
+                  <span>📝</span> 상품 등록하기
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 상품 목록 헤더 -->
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="mb-0 fw-bold" style="color: #2c3e50">공동구매 상품</h2>
+      </div>
+      <div class="alert alert-info border-0 shadow-sm mb-4" role="alert">
+        목록이 보이지 않거나 업데이트되지 않는 경우 브라우저 새로고침(F5)을 한
+        번 눌러 주세요.
+      </div>
+
+      <!-- 상품 목록 그리드 -->
+      <div id="posts-grid" class="row g-4">
+        <script id="posts-template" type="text/x-handlebars-template">
+          {{#each posts}}
+            <div class="col-md-6 col-lg-4">
+              <div class="card post-card h-100">
+                {{#if images}}
+                  <img
+                    src="{{images.0.imageUrl}}"
+                    alt="{{title}}"
+                    class="card-img-top post-image"
+                    style="height: 200px; object-fit: cover;"
+                  />
+                {{else}}
+                  <div class="card-img-top post-image-placeholder d-flex align-items-center justify-content-center">
+                    <span class="text-muted">이미지 없음</span>
+                  </div>
+                {{/if}}
+                <div class="card-body d-flex flex-column">
+                  <h5 class="card-title">{{title}}</h5>
+                  <p class="card-text text-muted small flex-grow-1">
+                    {{truncate content 50}}
+                  </p>
+                  <div class="mb-2">
+                    <span class="badge
+                      {{#eq status 'open'}}bg-success{{/eq}}
+                      {{#eq status 'closed'}}bg-secondary{{/eq}}
+                      {{#eq status 'cancelled'}}bg-danger{{/eq}}
+                    ">
+                      {{#eq status 'open'}}모집중{{/eq}}
+                      {{#eq status 'closed'}}마감{{/eq}}
+                      {{#eq status 'cancelled'}}취소됨{{/eq}}
+                    </span>
+                  </div>
+                  <div class="mb-2">
+                    <strong class="text-primary fs-4"
+                      >{{formatPrice price}}원</strong
+                    >
+                  </div>
+                  <div class="small text-muted mb-2">
+                    <div>최소 인원: {{minParticipants}}명</div>
+                    <div>현재 인원: {{currentQuantity}}명</div>
+                    <div>마감일: {{formatDate deadline}}</div>
+                  </div>
+                  <div class="mt-auto">
+                    <button
+                      class="btn btn-sm btn-primary w-100 mb-1 view-post-btn"
+                      data-post-id="{{id}}"
+                    >
+                      상세보기
+                    </button>
+                    {{#eq status 'open'}}
+                      <button
+                        class="btn btn-sm btn-success w-100 join-post-btn"
+                        data-post-id="{{id}}"
+                      >
+                        참여하기
+                      </button>
+                    {{/eq}}
+                  </div>
+                </div>
+              </div>
+            </div>
+          {{/each}}
+          {{#unless posts}}
+            <div class="col-12 text-center py-5">
+              <p class="text-muted">등록된 상품이 없습니다.</p>
+            </div>
+          {{/unless}}
+        </script>
+      </div>
+    </div>
+
+    <!-- 로그인 모달 -->
+    <div class="modal fade" id="loginModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">로그인</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <form id="login-form">
+              <div class="mb-3">
+                <label class="form-label">학번</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="login-student-id"
+                  placeholder="학번을 입력하세요"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">비밀번호</label>
+                <input
+                  type="password"
+                  class="form-control"
+                  id="login-password"
+                  placeholder="비밀번호를 입력하세요"
+                  minlength="8"
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                class="btn btn-primary w-100"
+                id="login-submit-btn"
+              >
+                로그인
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 회원가입 모달 -->
+    <div class="modal fade" id="registerModal" tabindex="-1">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">회원가입</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <form id="register-form">
+              <div class="mb-3">
+                <label class="form-label">이메일</label>
+                <input
+                  type="email"
+                  class="form-control"
+                  id="register-email"
+                  placeholder="example@mju.ac.kr"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">비밀번호 (8자 이상)</label>
+                <input
+                  type="password"
+                  class="form-control"
+                  id="register-password"
+                  minlength="8"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">닉네임</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="register-nickname"
+                  minlength="2"
+                  required
+                />
+              </div>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">학과 (선택사항)</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="register-department"
+                  />
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">학번 (필수)</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="register-student-id"
+                    required
+                  />
+                </div>
+              </div>
+              <button type="submit" class="btn btn-primary w-100">
+                회원가입
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 상품 등록 모달 -->
+    <div class="modal fade" id="createPostModal" tabindex="-1">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">상품 등록</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <form id="create-post-form">
+              <div class="mb-3">
+                <label class="form-label">제목</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="post-title"
+                  placeholder="상품 제목"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">내용</label>
+                <textarea
+                  class="form-control"
+                  id="post-content"
+                  rows="4"
+                  placeholder="상품 설명"
+                  required
+                ></textarea>
+              </div>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">가격 (원)</label>
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="post-price"
+                    min="0"
+                    step="0.01"
+                    required
+                  />
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">최소 인원</label>
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="post-min-participants"
+                    min="1"
+                    value="1"
+                    required
+                  />
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">마감일</label>
+                <input
+                  type="datetime-local"
+                  class="form-control"
+                  id="post-deadline"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">픽업 장소 (선택사항)</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="post-pickup-location"
+                  placeholder="예: 명지대학교 정문"
+                />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">이미지 업로드</label>
+                <input
+                  type="file"
+                  class="form-control"
+                  id="post-images"
+                  accept="image/*"
+                  multiple
+                />
+                <small class="text-muted"
+                  >여러 이미지를 선택할 수 있습니다. (jpeg, jpg, png, gif, webp,
+                  최대 5MB)</small
+                >
+                <div id="uploaded-images-preview" class="mt-2"></div>
+                <div
+                  id="image-upload-progress"
+                  class="mt-2"
+                  style="display: none"
+                >
+                  <div class="progress">
+                    <div
+                      class="progress-bar"
+                      role="progressbar"
+                      style="width: 0%"
+                    ></div>
+                  </div>
+                  <small class="text-muted">이미지 업로드 중...</small>
+                </div>
+              </div>
+              <button type="submit" class="btn btn-primary w-100">등록</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 상품 상세보기 모달 -->
+    <div class="modal fade" id="postDetailModal" tabindex="-1">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="post-detail-title"></h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body" id="post-detail-body">
+            <!-- 동적으로 채워짐 -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="scripts/main.js"></script>
+  </body>
+</html>
