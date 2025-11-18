@@ -7,7 +7,7 @@ export const createUserSchema = z.object({
     passwordHash: z.string().min(8), //비밀번호는 8자 이상
     nickname: z.string().min(2),
     department: z.string().optional(),
-    studentId: z.string().optional(),
+    studentId: z.string().min(1), // 학번 필수
     avatarUrl: z.string().optional(),
   }),
 });
@@ -32,3 +32,13 @@ export const updateUserSchema = z.object({
 });
 
 export type UpdateUserReq = z.infer<typeof updateUserSchema>;
+
+/**
+ * 로그인 요청 스키마 (학번 + 비밀번호)
+ */
+export const loginSchema = z.object({
+  studentId: z.string().min(1),
+  password: z.string().min(8),
+});
+
+export type LoginReq = z.infer<typeof loginSchema>;

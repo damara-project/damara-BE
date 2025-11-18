@@ -24,10 +24,14 @@ import z from "zod";
  * 
  * 그렇다면 컴파일 타임은 언제인가.
  * 코드를 실행하기전, TS가 코드를 읽고 타입 오류를 검사할때
- * const data = parseCreateUser(req.body);
+ * const data = parseCreateUser(req.body); ()
 
-data.email      // ✔ TS가 email을 string으로 알고 있음
-data.unknownKey // ❌ TS가 “없는 프로퍼티”라고 에러 냄 (코드 실행 전)
+    data.email      // ✔ TS가 email을 string으로 알고 있음
+    data.unknownKey // ❌ TS가 “없는 프로퍼티”라고 에러 냄 (코드 실행 전)
+
+
+    완전 초장기 : 컴파일 타임
+    -> 뒤에 사용자와 상호작용하는게 런타임.
 
  */
 
@@ -36,6 +40,12 @@ export function parseReq<T>(schema: z.ZodType<T>) {
     const result = schema.safeParse(input);
 
     if (!result.success) {
+      // 디버깅을 위해 검증 실패 상세 정보 로깅
+      console.error(
+        "Validation Error Details:",
+        JSON.stringify(result.error, null, 2)
+      );
+      console.error("Input received:", JSON.stringify(input, null, 2));
       throw new RouteError(HttpStatusCodes.BAD_REQUEST, "VALIDATION_ERROR");
     }
 

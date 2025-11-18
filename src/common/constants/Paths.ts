@@ -11,4 +11,7 @@ export default {
   Posts: {
     Base: '/posts',
   },
+  Upload: {
+    Base: '/upload',
+  },
 } as const;

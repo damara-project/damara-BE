@@ -23,7 +23,7 @@ export interface UserAttributes {
   passwordHash: string;
   nickname: string;
   department: string | null;
-  studentId: string | null;
+  studentId: string; // 필수 필드로 변경
   avatarUrl: string | null;
   createdAt?: Date;
   updatedAt?: Date;
@@ -33,8 +33,8 @@ export interface UserAttributes {
 // Optional<T, K>를 이용해 생성 시 선택 입력 필드를 지정한다.
 export type UserCreationAttributes = Optional<
   UserAttributes,
-  "id" | "department" | "studentId" | "avatarUrl" | "createdAt" | "updatedAt"
->;
+  "id" | "department" | "avatarUrl" | "createdAt" | "updatedAt"
+>; // studentId는 필수이므로 Optional에서 제거
 
 // Sequelize 모델 타입 선언
 // Model<Attributes, CreationAttributes>를 상속하면
@@ -48,7 +48,7 @@ export class UserModel
   public passwordHash!: string;
   public nickname!: string;
   public department!: string | null;
-  public studentId!: string | null;
+  public studentId!: string; // 필수 필드로 변경
   public avatarUrl!: string | null;
 
   public readonly createdAt!: Date;
@@ -91,7 +91,8 @@ UserModel.init(
 
     studentId: {
       type: DataTypes.STRING(50),
-      allowNull: true,
+      allowNull: false,
+      unique: true, // 학번은 unique해야 함
       field: "student_id",
     },
 

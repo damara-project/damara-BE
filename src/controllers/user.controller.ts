@@ -18,6 +18,8 @@ import {
   CreateUserReq,
   updateUserSchema,
   UpdateUserReq,
+  loginSchema,
+  LoginReq,
 } from "@src/routes/common/validation/user-schemas";
 
 /**
@@ -107,6 +109,24 @@ export async function deleteUser(
     await UserService.deleteUser(id);
 
     res.status(HttpStatusCodes.NO_CONTENT).send();
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * 로그인 컨트롤러
+ * POST /api/users/login
+ * body: { studentId: string, password: string }
+ */
+export async function login(req: Request, res: Response, next: NextFunction) {
+  try {
+    const validatedData = parseReq<LoginReq>(loginSchema)(req.body);
+    const { studentId, password } = validatedData;
+
+    const user = await UserService.loginByStudentId(studentId, password);
+
+    res.status(HttpStatusCodes.OK).json(user);
   } catch (error) {
     next(error);
   }

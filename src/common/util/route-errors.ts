@@ -46,3 +46,25 @@ export class EmailAlreadyExistsError extends RouteError {
     super(HttpStatusCodes.CONFLICT, EmailAlreadyExistsError.MESSAGE);
   }
 }
+
+/**
+ * Invalid credentials error (wrong studentId or password).
+ */
+export class InvalidCredentialsError extends RouteError {
+  public static MESSAGE = 'INVALID_CREDENTIALS';
+
+  public constructor() {
+    super(HttpStatusCodes.UNAUTHORIZED, InvalidCredentialsError.MESSAGE);
+  }
+}
+
+/**
+ * Student ID already exists error.
+ */
+export class StudentIdAlreadyExistsError extends RouteError {
+  public static MESSAGE = 'STUDENT_ID_ALREADY_EXISTS';
+
+  public constructor() {
+    super(HttpStatusCodes.CONFLICT, StudentIdAlreadyExistsError.MESSAGE);
+  }
+}

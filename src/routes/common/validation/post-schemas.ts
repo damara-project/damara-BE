@@ -15,7 +15,7 @@ export const createPostSchema = z.object({
       { message: "Invalid datetime format" }
     ), // ISO 8601 형식 검증
     pickupLocation: z.string().max(200).optional(),
-    images: z.array(z.string().url()).optional(), // 이미지 URL 배열 (유효한 URL만 포함)
+    images: z.array(z.string().min(1)).optional(), // 이미지 URL 배열 (상대 경로 또는 절대 URL 모두 허용)
   }),
 });
 
@@ -39,7 +39,7 @@ export const updatePostSchema = z.object({
       )
       .optional(),
     pickupLocation: z.string().max(200).optional(),
-    images: z.array(z.string().url()).optional(), // 이미지 URL 배열 (유효한 URL만 포함)
+    images: z.array(z.string().min(1)).optional(), // 이미지 URL 배열 (상대 경로 또는 절대 URL 모두 허용)
   }),
 });
 

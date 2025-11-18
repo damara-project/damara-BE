@@ -2,7 +2,10 @@
 import { UserModel } from "@src/models/User";
 
 import { UserCreationAttributes } from "@src/models/User";
-import { EmailAlreadyExistsError } from "@src/common/util/route-errors";
+import {
+  EmailAlreadyExistsError,
+  StudentIdAlreadyExistsError,
+} from "@src/common/util/route-errors";
 
 export const UserRepo = {
   /**
@@ -15,6 +18,15 @@ export const UserRepo = {
     } catch (e: unknown) {
       // Sequelize 고유 에러 코드: unique constraint
       if (e instanceof Error && e.name === "SequelizeUniqueConstraintError") {
+        // 에러 메시지에서 어떤 필드가 중복인지 확인
+        const errorMessage = e instanceof Error ? e.message : String(e);
+        if (
+          errorMessage.includes("student_id") ||
+          errorMessage.includes("studentId")
+        ) {
+          throw new StudentIdAlreadyExistsError();
+        }
+        // 기본적으로는 이메일 중복으로 처리
         throw new EmailAlreadyExistsError();
       }
       throw e;
@@ -27,6 +39,16 @@ export const UserRepo = {
   async findByEmail(email: string) {
     const user = await UserModel.findOne({
       where: { email },
+    });
+    return user ? user.get() : null;
+  },
+
+  /**
+   * 학번 기반 조회
+   */
+  async findByStudentId(studentId: string) {
+    const user = await UserModel.findOne({
+      where: { studentId },
     });
     return user ? user.get() : null;
   },

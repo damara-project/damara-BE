@@ -42,7 +42,7 @@ app.get("/posts", (_: Request, res: Response) => {
 });
 
 app.get("/", (_: Request, res: Response) => {
-  return res.redirect("/posts");
+  return res.sendFile("index.html", { root: viewsDir });
 });
 
 /**
