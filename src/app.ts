@@ -6,6 +6,10 @@ import BaseRouter from "./routes";
 import Paths from "./common/constants/Paths";
 import HttpStatusCodes from "./common/constants/HttpStatusCodes";
 import { RouteError } from "./common/util/route-errors";
+import { sequelize } from "./db";
+import UserModel from "./models/User";
+import PostModel from "./models/Post";
+import PostImageModel from "./models/PostImage";
 
 const app = express();
 
@@ -44,6 +48,23 @@ app.get("/posts", (_: Request, res: Response) => {
 app.get("/", (_: Request, res: Response) => {
   return res.sendFile("index.html", { root: viewsDir });
 });
+
+/**
+ * Database Sync (force: true로 서버 시작 시마다 테이블 재생성)
+ * 과제 평가 시마다 DB를 초기화한 상태에서 시작하기 위함
+ */
+export async function syncDatabase() {
+  try {
+    // force: true는 기존 테이블을 모두 삭제하고 새로 생성합니다.
+    // ⚠️ 주의: 서버 실행 시마다 모든 데이터가 삭제됩니다!
+    await sequelize.sync({ force: true });
+    logger.info("✓ 데이터베이스 테이블이 초기화되었습니다 (force: true)");
+  } catch (error) {
+    logger.err("✗ 데이터베이스 동기화 실패");
+    logger.err(error, true);
+    throw error;
+  }
+}
 
 /**
  * API Routes

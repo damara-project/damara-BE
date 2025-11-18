@@ -8,6 +8,84 @@ const API_BASE_UPLOAD = "/api/upload";
 let currentUser = null;
 
 /**
+ * Toast 메시지 표시 함수
+ */
+function showToast(message, type = "success", duration = 3000) {
+  const toastContainer = document.getElementById("toast-container");
+  if (!toastContainer) return;
+
+  const toastId = `toast-${Date.now()}-${Math.random()
+    .toString(36)
+    .substr(2, 9)}`;
+
+  // 타입에 따른 아이콘과 색상 설정
+  const toastConfig = {
+    success: {
+      icon: "✅",
+      bgColor: "bg-success",
+      headerColor: "text-white",
+    },
+    error: {
+      icon: "❌",
+      bgColor: "bg-danger",
+      headerColor: "text-white",
+    },
+    warning: {
+      icon: "⚠️",
+      bgColor: "bg-warning",
+      headerColor: "text-dark",
+    },
+    info: {
+      icon: "ℹ️",
+      bgColor: "bg-info",
+      headerColor: "text-white",
+    },
+  };
+
+  const config = toastConfig[type] || toastConfig.success;
+
+  const toastHTML = `
+    <div id="${toastId}" class="toast ${config.bgColor} ${
+    config.headerColor
+  }" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="toast-header ${config.bgColor} ${config.headerColor}">
+        <strong class="me-auto">${config.icon} ${
+    type === "success"
+      ? "성공"
+      : type === "error"
+      ? "오류"
+      : type === "warning"
+      ? "경고"
+      : "안내"
+  }</strong>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+      <div class="toast-body ${
+        type === "warning" ? "text-dark" : "text-white"
+      }" style="font-weight: 500;">
+        ${message}
+      </div>
+    </div>
+  `;
+
+  toastContainer.insertAdjacentHTML("beforeend", toastHTML);
+
+  const toastElement = document.getElementById(toastId);
+  if (toastElement) {
+    const toast = new bootstrap.Toast(toastElement, {
+      autohide: true,
+      delay: duration,
+    });
+    toast.show();
+
+    // Toast가 숨겨진 후 DOM에서 제거
+    toastElement.addEventListener("hidden.bs.toast", () => {
+      toastElement.remove();
+    });
+  }
+}
+
+/**
  * 로컬 스토리지에서 사용자 정보 로드
  */
 function loadUserFromStorage() {
@@ -124,7 +202,7 @@ async function loadPosts() {
     gridElement.innerHTML = template({ posts });
   } catch (error) {
     console.error("Error loading posts:", error);
-    alert("상품 목록을 불러오는 중 오류가 발생했습니다.");
+    showToast("상품 목록을 불러오는 중 오류가 발생했습니다.", "error");
   }
 }
 
@@ -178,7 +256,7 @@ if (loginForm) {
     const password = document.getElementById("login-password").value.trim();
 
     if (!studentId || !password) {
-      alert("학번과 비밀번호를 모두 입력하세요.");
+      showToast("학번과 비밀번호를 모두 입력하세요.", "warning");
       return;
     }
 
@@ -197,7 +275,7 @@ if (loginForm) {
       if (!response.ok) {
         const error = await response.json();
         if (response.status === 401) {
-          alert("학번 또는 비밀번호가 올바르지 않습니다.");
+          showToast("학번 또는 비밀번호가 올바르지 않습니다.", "error");
         } else {
           throw new Error(
             error.error || `HTTP error! status: ${response.status}`
@@ -220,10 +298,10 @@ if (loginForm) {
         loginForm.reset();
       }
 
-      alert("로그인되었습니다!");
+      showToast(`${user.nickname}님, 환영합니다! 🎉`, "success");
     } catch (error) {
       console.error("Error logging in:", error);
-      alert(`로그인 중 오류가 발생했습니다: ${error.message}`);
+      showToast(`로그인 중 오류가 발생했습니다: ${error.message}`, "error");
     }
   });
 }
@@ -249,7 +327,7 @@ if (registerForm) {
       .value.trim();
 
     if (!studentId) {
-      alert("학번은 필수 입력 항목입니다.");
+      showToast("학번은 필수 입력 항목입니다.", "warning");
       return;
     }
 
@@ -288,10 +366,18 @@ if (registerForm) {
       registerModal.hide();
       document.getElementById("register-form").reset();
 
-      alert("회원가입이 완료되었습니다!");
+      showToast(
+        `회원가입이 완료되었습니다! 환영합니다, ${user.nickname}님! 🎉`,
+        "success"
+      );
     } catch (error) {
       console.error("Error registering:", error);
-      alert(`회원가입 중 오류가 발생했습니다: ${error.message}`);
+      const errorMessage = error.message.includes("EMAIL_ALREADY_EXISTS")
+        ? "이미 사용 중인 이메일입니다."
+        : error.message.includes("STUDENT_ID_ALREADY_EXISTS")
+        ? "이미 사용 중인 학번입니다."
+        : `회원가입 중 오류가 발생했습니다: ${error.message}`;
+      showToast(errorMessage, "error");
     }
   });
 }
@@ -303,7 +389,7 @@ const createPostBtn = document.getElementById("create-post-btn");
 if (createPostBtn) {
   createPostBtn.addEventListener("click", () => {
     if (!currentUser) {
-      alert("로그인이 필요합니다.");
+      showToast("로그인이 필요합니다.", "warning");
       return;
     }
 
@@ -455,8 +541,18 @@ if (createPostForm) {
     if (imageFiles && imageFiles.length > 0) {
       try {
         imageUrls = await uploadImages(imageFiles);
+        if (imageUrls.length > 0) {
+          showToast(
+            `${imageUrls.length}개의 이미지가 업로드되었습니다.`,
+            "success",
+            2000
+          );
+        }
       } catch (error) {
-        alert(`이미지 업로드 중 오류가 발생했습니다: ${error.message}`);
+        showToast(
+          `이미지 업로드 중 오류가 발생했습니다: ${error.message}`,
+          "error"
+        );
         return;
       }
     }
@@ -493,7 +589,7 @@ if (createPostForm) {
         );
       }
 
-      alert("상품이 등록되었습니다.");
+      showToast("상품이 등록되었습니다! 🎉", "success");
       if (createPostForm) {
         createPostForm.reset();
         const previewEl = document.getElementById("uploaded-images-preview");
@@ -509,7 +605,7 @@ if (createPostForm) {
       loadPosts();
     } catch (error) {
       console.error("Error creating post:", error);
-      alert(`상품 등록 중 오류가 발생했습니다: ${error.message}`);
+      showToast(`상품 등록 중 오류가 발생했습니다: ${error.message}`, "error");
     }
   });
 }
@@ -595,14 +691,14 @@ document.addEventListener("click", async (e) => {
       detailModal.show();
     } catch (error) {
       console.error("Error loading post detail:", error);
-      alert("상품 상세 정보를 불러오는 중 오류가 발생했습니다.");
+      showToast("상품 상세 정보를 불러오는 중 오류가 발생했습니다.", "error");
     }
   }
 
   // 참여하기 버튼 (카드에서)
   if (e.target.classList.contains("join-post-btn")) {
     if (!currentUser) {
-      alert("로그인이 필요합니다.");
+      showToast("로그인이 필요합니다.", "warning");
       const loginModal = new bootstrap.Modal(
         document.getElementById("loginModal")
       );
@@ -611,14 +707,14 @@ document.addEventListener("click", async (e) => {
     }
 
     const postId = e.target.getAttribute("data-post-id");
-    alert("참여하기 기능은 추후 구현 예정입니다.");
+    showToast("참여하기 기능은 추후 구현 예정입니다.", "info");
     // TODO: 참여하기 기능 구현
   }
 
   // 참여하기 버튼 (상세 모달에서)
   if (e.target.classList.contains("join-post-btn-detail")) {
     if (!currentUser) {
-      alert("로그인이 필요합니다.");
+      showToast("로그인이 필요합니다.", "warning");
       const loginModal = new bootstrap.Modal(
         document.getElementById("loginModal")
       );
@@ -627,7 +723,7 @@ document.addEventListener("click", async (e) => {
     }
 
     const postId = e.target.getAttribute("data-post-id");
-    alert("참여하기 기능은 추후 구현 예정입니다.");
+    showToast("참여하기 기능은 추후 구현 예정입니다.", "info");
     // TODO: 참여하기 기능 구현
   }
 });

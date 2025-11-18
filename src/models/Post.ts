@@ -1,15 +1,8 @@
 // src/models/Post.ts
 
-import { DataTypes, Model, Optional, Sequelize } from "sequelize";
-import ENV from "@src/common/constants/ENV";
+import { DataTypes, Model, Optional } from "sequelize";
+import { sequelize } from "@src/db";
 import UserModel from "./User";
-
-/**
- * Sequelize 인스턴스 재사용 (User.ts와 동일)
- */
-const sequelize = new Sequelize(ENV.DatabaseUrl, {
-  logging: false,
-});
 
 // ----------------------------
 // TypeScript 타입 정의

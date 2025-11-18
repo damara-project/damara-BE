@@ -24,12 +24,20 @@
   </head>
 
   <body>
-    <!-- 헤더 -->
-    <nav
-      class="navbar navbar-expand-lg navbar-light bg-light border-bottom mb-4"
+    <!-- Toast Container -->
+    <div
+      class="toast-container position-fixed top-0 end-0 p-3"
+      style="z-index: 9999"
     >
+      <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
+    </div>
+
+    <!-- 헤더 -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm mb-4">
       <div class="container">
-        <a class="navbar-brand fw-bold" href="/">🍊 다마라</a>
+        <a class="navbar-brand fw-bold" href="/">
+          <span style="font-size: 1.8rem">🍊</span> 다마라
+        </a>
         <button
           class="navbar-toggler"
           type="button"
@@ -75,17 +83,20 @@
     <div class="container">
       <!-- 현재 사용자 정보 영역 (로그인 시 표시) -->
       <div id="user-info-section" class="d-none mb-4">
-        <div class="card bg-light">
-          <div class="card-body">
+        <div
+          class="card border-0 shadow-sm"
+          style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+        >
+          <div class="card-body text-white">
             <div class="row align-items-center">
               <div class="col-md-8">
-                <h5 class="mb-1">
+                <h5 class="mb-1 fw-bold">
                   안녕하세요, <span id="current-user-nickname"></span>님! 👋
                 </h5>
-                <small class="text-muted" id="current-user-email"></small>
+                <small class="opacity-75" id="current-user-email"></small>
               </div>
               <div class="col-md-4 text-end">
-                <button class="btn btn-success" id="create-post-btn">
+                <button class="btn btn-light fw-bold" id="create-post-btn">
                   <span>📝</span> 상품 등록하기
                 </button>
               </div>
@@ -96,8 +107,8 @@
 
       <!-- 상품 목록 헤더 -->
       <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="mb-0">공동구매 상품</h2>
-        <button class="btn btn-outline-primary" id="refresh-posts-btn">
+        <h2 class="mb-0 fw-bold" style="color: #2c3e50">공동구매 상품</h2>
+        <button class="btn btn-outline-primary fw-bold" id="refresh-posts-btn">
           🔄 새로고침
         </button>
       </div>
