@@ -1,3 +1,4 @@
+// 고급웹프로그래밍_3_최원빈_60203042
 // src/services/PostService.ts
 
 import { PostRepo } from "@src/repos/PostRepo";
@@ -52,6 +53,18 @@ export const PostService = {
    */
   async listPostsByAuthor(authorId: string, limit = 20, offset = 0) {
     return await PostRepo.findByAuthorId(authorId, limit, offset);
+  },
+
+  /**
+   * 작성자 학번으로 조회
+   * - 학번으로 User를 찾은 뒤 해당 사용자의 게시글을 반환
+   */
+  async listPostsByStudentId(studentId: string, limit = 20, offset = 0) {
+    const author = await UserModel.findOne({ where: { studentId } });
+    if (!author) {
+      throw new RouteError(HttpStatusCodes.NOT_FOUND, "AUTHOR_NOT_FOUND");
+    }
+    return await PostRepo.findByAuthorId(author.id, limit, offset);
   },
 
   /**

@@ -1,3 +1,4 @@
+// 고급웹프로그래밍_3_최원빈_60203042
 // src/public/scripts/main.js
 // -----------------------------------------------------------------------------
 // 프런트엔드 상호작용을 모두 담당하는 핵심 스크립트
@@ -8,6 +9,42 @@
 const API_BASE_POSTS = "/api/posts";
 const API_BASE_USERS = "/api/users";
 const API_BASE_UPLOAD = "/api/upload";
+
+let handlebarsHelpersRegistered = false;
+
+function ensureHandlebarsHelpers() {
+  if (handlebarsHelpersRegistered || typeof Handlebars === "undefined") {
+    return;
+  }
+
+  Handlebars.registerHelper("eq", function (a, b, options) {
+    if (options && typeof options.fn === "function") {
+      return a === b ? options.fn(this) : options.inverse(this);
+    }
+    return a === b;
+  });
+
+  Handlebars.registerHelper("formatDate", function (dateString) {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toLocaleString("ko-KR");
+  });
+
+  Handlebars.registerHelper("truncate", function (str, len) {
+    if (!str || str.length <= len) return str;
+    return `${str.substring(0, len)}...`;
+  });
+
+  Handlebars.registerHelper("formatPrice", function (value) {
+    const num = Number(value);
+    if (Number.isNaN(num)) {
+      return value;
+    }
+    return num.toLocaleString("ko-KR");
+  });
+
+  handlebarsHelpersRegistered = true;
+}
 
 // 현재 로그인한 사용자 정보
 let currentUser = null;
@@ -187,22 +224,7 @@ async function loadPosts() {
     }
     const posts = await response.json();
 
-    // Handlebars 헬퍼 등록
-    Handlebars.registerHelper("eq", function (a, b) {
-      return a === b;
-    });
-
-    Handlebars.registerHelper("formatDate", function (dateString) {
-      if (!dateString) return "";
-      const date = new Date(dateString);
-      return date.toLocaleString("ko-KR");
-    });
-
-    Handlebars.registerHelper("truncate", function (str, len) {
-      if (!str || str.length <= len) return str;
-      return str.substring(0, len) + "...";
-    });
-
+    ensureHandlebarsHelpers();
     const template = Handlebars.compile(templateElement.innerHTML);
     gridElement.innerHTML = template({ posts });
   } catch (error) {

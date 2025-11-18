@@ -2,6 +2,50 @@
 
 This project was created with [express-generator-typescript](https://github.com/seanpmaxwell/express-generator-typescript).
 
+## Service Architecture Overview
+
+```mermaid
+flowchart LR
+  subgraph Client
+    A[index.html<br/>대시보드 & 상품목록]
+    B[users.html<br/>회원 관리]
+    C[posts.html<br/>내 상품 관리]
+  end
+
+  subgraph Express
+    R[BaseRouter (/api)]
+    UC[User Controllers]
+    PC[Post Controllers]
+    UpC[Upload Controllers]
+    App[app.ts<br/>middleware & error handler]
+  end
+
+  subgraph Services
+    USvc[UserService]
+    PSvc[PostService]
+  end
+
+  subgraph Data
+    URepo[UserRepo]
+    PRepo[PostRepo]
+    Multer[multer disk storage]
+  end
+
+  DB[(MySQL<br/>Sequelize Models)]
+
+  Client -->|fetch/forms| R
+  R -->|/api/users| UC --> USvc --> URepo --> DB
+  R -->|/api/posts| PC --> PSvc --> PRepo --> DB
+  R -->|/api/upload| UpC --> Multer
+  App --> DB
+```
+
+- **Views (`src/views` + `public/scripts`)**: Bootstrap + Handlebars UI로 회원/상품/이미지 시나리오를 구현했습니다.
+- **Controllers (`src/controllers`)**: `parseReq`를 통해 Zod 검증을 수행하고, 모든 오류를 전역 핸들러로 위임합니다.
+- **Services (`src/services`)**: 학번 로그인, 비밀번호 해시, 게시글-사용자 매핑 등 도메인 규칙을 처리합니다.
+- **Repositories (`src/repos`)**: Sequelize 모델을 호출하여 MySQL과 통신하며, 이미지 업로드는 `multer`를 통해 정적 경로를 반환합니다.
+- **Error & Infra (`app.ts`, `server.ts`)**: 미들웨어/정적 자원/글로벌 오류 응답을 담당하고, 서버 기동 시 DB sync를 강제합니다.
+
 **IMPORTANT** for demo purposes I had to disable `helmet` in production. In any real world app you should change these 3 lines of code in `src/server.ts`:
 ```ts
 // eslint-disable-next-line n/no-process-env

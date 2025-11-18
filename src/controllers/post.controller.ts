@@ -1,3 +1,4 @@
+// 고급웹프로그래밍_3_최원빈_60203042
 // src/controllers/post.controller.ts
 
 import { Request, Response, NextFunction } from "express";
@@ -34,6 +35,35 @@ export async function getAllPosts(
 
     const posts = await PostService.listPosts(limit, offset);
 
+    res.status(HttpStatusCodes.OK).json(posts);
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * 특정 작성자의 상품 목록 (학번 기준)
+ * GET /api/posts/student/:studentId
+ */
+export async function getPostsByStudentId(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { studentId } = req.params;
+    const limit = req.query.limit
+      ? parseInt(req.query.limit as string, 10)
+      : 20;
+    const offset = req.query.offset
+      ? parseInt(req.query.offset as string, 10)
+      : 0;
+
+    const posts = await PostService.listPostsByStudentId(
+      studentId,
+      limit,
+      offset
+    );
     res.status(HttpStatusCodes.OK).json(posts);
   } catch (error) {
     next(error);
