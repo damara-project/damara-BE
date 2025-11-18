@@ -28,7 +28,10 @@ async function startServer() {
 
     // 3. Express 서버 시작
     app.listen(ENV.Port, () => {
-      logger.info(`Server is running on port ${ENV.Port}`);
+      const msg = `🚀 Server ready at http://localhost:${ENV.Port}`;
+      logger.info(msg);
+      // jet-logger는 production에서 파일에만 찍힐 수 있으니, 개발 편의를 위해 콘솔도 남긴다.
+      console.log(msg);
     });
   } catch (error) {
     // 서버를 기동하지 못한 이유를 기록하고 프로세스를 종료한다.

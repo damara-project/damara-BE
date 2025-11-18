@@ -2,6 +2,7 @@
 
 import { Request, Response, NextFunction } from "express";
 import { PostService } from "@src/services/PostService";
+import { PostCreationAttributes } from "@src/models/Post";
 import { parseReq } from "@src/routes/common/validation/parseReq";
 import HttpStatusCodes from "@src/common/constants/HttpStatusCodes";
 import {
@@ -12,13 +13,16 @@ import {
 } from "@src/routes/common/validation/post-schemas";
 
 /**
- * 공동구매 상품 전체 조회 컨트롤러
- * GET /api/posts
+ * 공동구매 상품 전체 목록
+ * GET /api/posts?limit&offset
+ *
+ * - pagination 기본값은 (20, 0)
+ * - Service.listPosts로 위임하여 DB 접근을 추상화
  */
 export async function getAllPosts(
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ) {
   try {
     const limit = req.query.limit
@@ -37,13 +41,15 @@ export async function getAllPosts(
 }
 
 /**
- * 공동구매 상품 상세 조회 컨트롤러
+ * 공동구매 상품 상세 조회
  * GET /api/posts/:id
+ *
+ * - 존재하지 않으면 Service에서 RouteError(404)를 던짐
  */
 export async function getPostById(
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ) {
   try {
     const { id } = req.params;
@@ -56,14 +62,17 @@ export async function getPostById(
 }
 
 /**
- * 공동구매 상품 등록 컨트롤러
+ * 공동구매 상품 등록
  * POST /api/posts
  * body: { post: { ... } }
+ *
+ * - deadline 문자열을 Date 객체로 변환
+ * - 이미지 배열을 그대로 Service.createPost에 전달
  */
 export async function createPost(
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ) {
   try {
     const validatedData = parseReq<CreatePostReq>(createPostSchema)(req.body);
@@ -77,7 +86,7 @@ export async function createPost(
         ...postData,
         deadline: new Date(deadline),
       },
-      images,
+      images
     );
 
     res.status(HttpStatusCodes.CREATED).json(createdPost);
@@ -87,24 +96,29 @@ export async function createPost(
 }
 
 /**
- * 공동구매 상품 수정 컨트롤러
+ * 공동구매 상품 수정
  * PUT /api/posts/:id
- * body: { post: { ... } }
+ * body: { post: { ...patch } }
+ *
+ * - 부분 업데이트를 허용하므로 Partial<PostCreationAttributes> 사용
  */
 export async function updatePost(
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ) {
   try {
     const { id } = req.params;
     const validatedData = parseReq<UpdatePostReq>(updatePostSchema)(req.body);
     const { post } = validatedData;
 
-    // deadline이 있으면 Date 객체로 변환
-    const updateData: any = { ...post };
-    if (post.deadline) {
-      updateData.deadline = new Date(post.deadline);
+    // deadline을 분리하여 Date 객체로 변환
+    const { deadline, ...patchWithoutDeadline } = post;
+    const updateData: Partial<PostCreationAttributes> = {
+      ...patchWithoutDeadline,
+    };
+    if (deadline) {
+      updateData.deadline = new Date(deadline);
     }
 
     const updatedPost = await PostService.updatePost(id, updateData);
@@ -116,13 +130,15 @@ export async function updatePost(
 }
 
 /**
- * 공동구매 상품 삭제 컨트롤러
+ * 공동구매 상품 삭제
  * DELETE /api/posts/:id
+ *
+ * - 성공 시 204 No Content
  */
 export async function deletePost(
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ) {
   try {
     const { id } = req.params;
@@ -133,4 +149,3 @@ export async function deletePost(
     next(error);
   }
 }
-

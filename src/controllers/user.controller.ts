@@ -1,13 +1,12 @@
-//컨트롤러는 통상적으로, http 관련 로직만을 담당함
-
-//1. 라우터와 컨트롤러는 리소스명.역할. 형태로 이름을 짓고, 서비스와 레포지토리는 PascalCase로 이름을 짓는다.
-//2. 컨트롤러는 라우터에서 요청을 받아, 서비스를 호출하고, 응답을 반환한다.
-//즉, 컨트롤러와 라우터는 kebab-case로 이름을 짓는다.
 /**
- * 또한, controller는 http 요청과 응답만을 처리함
- *1. req.body 파싱 -> zod 스키마로 검증
-  2. service 호출
-  3. res.json 응답
+ * User Controller
+ * ---------------------------------------------------------------------------
+ * 컨트롤러는 "HTTP 레이어"만 담당한다.
+ * 1) 요청 Payload를 파싱/검증하고
+ * 2) Service에게 비즈니스 로직을 위임한 뒤
+ * 3) HTTP Status + JSON 형태로 응답을 만든다.
+ *
+ * 에러 처리는 next(error)로 넘겨 app.ts에 정의한 전역 에러 핸들러가 수행.
  */
 import { Request, Response, NextFunction } from "express";
 import { UserService } from "@src/services/UserService";
@@ -23,16 +22,13 @@ import {
 } from "@src/routes/common/validation/user-schemas";
 
 /**
- * 1. 회원가입 컨트롤러
- * POST/ api /users
- * body : {users :{...}}
+ * 회원가입
+ * POST /api/users
+ * body: { user: {...} }
  *
- * next()를 사용하는 이유:
- * - 에러를 전역 에러 핸들러로 전달하여 중앙 집중식 처리
- * - 코드 중복 제거 (모든 컨트롤러에서 에러 처리 반복 불필요)
- * - 일관된 에러 응답 형태 보장
- * - ValidationError, EmailAlreadyExistsError는 RouteError를 상속받으므로
- *   전역 에러 핸들러에서 자동으로 처리됨
+ * - 요청 본문을 Zod Schema로 검증
+ * - UserService.registerUser 호출
+ * - 생성된 사용자 정보를 201 상태와 함께 반환
  */
 export async function createUser(
   req: Request,
@@ -40,8 +36,6 @@ export async function createUser(
   next: NextFunction
 ) {
   try {
-    //1. 사용자 검증부터 use ParseReq function 제네릭 타입은 우리가 정의한 createUserSchema Type
-    // parseReq는 커리 함수: parseReq(schema)(input) 형태로 사용
     const validatedData = parseReq<CreateUserReq>(createUserSchema)(req.body);
     const { user } = validatedData;
 
@@ -58,7 +52,13 @@ export async function createUser(
   }
 }
 
-//전체 조회 함수
+/**
+ * 사용자 전체 조회
+ * GET /api/users
+ *
+ * - paging 파라미터 확장이 필요하면 querystring을 파싱해서
+ *   UserService.listUsers(limit, offset)에 넘기면 된다.
+ */
 export async function getAllUsers(
   req: Request,
   res: Response,
@@ -73,9 +73,13 @@ export async function getAllUsers(
 }
 
 /**
- * 회원 수정 컨트롤러
+ * 회원 정보 수정
  * PUT /api/users/:id
- * body: { user: { ... } }
+ * body: { user: { ...patch } }
+ *
+ * - path param으로 대상 id 추출
+ * - patch 데이터는 optional 필드만 허용(Zod)
+ * - Service.updateUser가 RouteError를 던지면 전역 핸들러가 처리
  */
 export async function updateUser(
   req: Request,
@@ -96,8 +100,11 @@ export async function updateUser(
 }
 
 /**
- * 회원 삭제 컨트롤러
+ * 회원 삭제
  * DELETE /api/users/:id
+ *
+ * - soft delete 없이 실제 레코드 삭제
+ * - 성공 시 204 No Content
  */
 export async function deleteUser(
   req: Request,
@@ -115,9 +122,12 @@ export async function deleteUser(
 }
 
 /**
- * 로그인 컨트롤러
+ * 학번 로그인
  * POST /api/users/login
- * body: { studentId: string, password: string }
+ * body: { studentId, password }
+ *
+ * - StudentId/Password 조합 검증
+ * - 비밀번호 해시 제거 후 응답
  */
 export async function login(req: Request, res: Response, next: NextFunction) {
   try {

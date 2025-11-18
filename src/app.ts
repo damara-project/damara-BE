@@ -19,7 +19,11 @@ import PostImageModel from "./models/PostImage";
 const app = express();
 
 /**
+ * ---------------------------------------------------------------------------
  * Global Middleware
+ * ---------------------------------------------------------------------------
+ * - express.json : JSON Body 파싱
+ * - express.urlencoded : form-urlencoded 파싱 (프론트 HTML 폼 대응)
  */
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -39,8 +43,11 @@ app.use(express.static(path.join(__dirname, "public")));
 const viewsDir = path.join(__dirname, "views");
 
 /**
+ * ---------------------------------------------------------------------------
  * HTML Pages Routes
- * 프론트엔드 HTML 페이지 서빙
+ * ---------------------------------------------------------------------------
+ * - `/users`, `/posts`, `/` 요청 시 정적 HTML 페이지 제공
+ * - React/Vue 없이 Handlebars+Vanilla JS로 구성된 뷰를 노출한다.
  */
 app.get("/users", (_: Request, res: Response) => {
   return res.sendFile("users.html", { root: viewsDir });
@@ -55,8 +62,11 @@ app.get("/", (_: Request, res: Response) => {
 });
 
 /**
- * Database Sync (force: true로 서버 시작 시마다 테이블 재생성)
- * 과제 평가 시마다 DB를 초기화한 상태에서 시작하기 위함
+ * ---------------------------------------------------------------------------
+ * Database Sync Helper
+ * ---------------------------------------------------------------------------
+ * server.ts에서 import하여 매번 서버 시작 시 스키마를 초기화한다.
+ * (과제 요구사항: 항상 동일한 초기 상태 보장)
  */
 export async function syncDatabase() {
   try {
@@ -72,19 +82,21 @@ export async function syncDatabase() {
 }
 
 /**
- * API Routes
- *
- * Paths.Base는 /api 이고, BaseRouter는 @src/routes/index.ts 에 있는 라우터이다.
- *    따라서, /api 경로로 들어오면 @src/routes/index.ts 에 있는 라우터로 처리된다.  (BaseRouter)
- 
- *
+ * ---------------------------------------------------------------------------
+ * API Router Mount
+ * ---------------------------------------------------------------------------
+ * Paths.Base === "/api"
+ * => 모든 API 요청은 BaseRouter(@src/routes/index.ts)로 위임
  */
 app.use(Paths.Base, BaseRouter);
 
 /**
- * Error Handling (Centralized)
+ * ---------------------------------------------------------------------------
+ * Global Error Handler
+ * ---------------------------------------------------------------------------
+ * - Service/Repo에서 던지는 RouteError를 일관된 JSON 응답으로 변환
+ * - 예기치 못한 에러는 500으로 감싼 뒤 로그를 남긴다.
  */
-
 app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
   void _next;
 
