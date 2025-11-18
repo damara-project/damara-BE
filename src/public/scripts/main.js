@@ -728,16 +728,6 @@ document.addEventListener("click", async (e) => {
   }
 });
 
-/**
- * 새로고침 버튼
- */
-const refreshBtn = document.getElementById("refresh-posts-btn");
-if (refreshBtn) {
-  refreshBtn.addEventListener("click", () => {
-    loadPosts();
-  });
-}
-
 // 페이지 로드 시 초기화
 window.addEventListener("DOMContentLoaded", () => {
   loadUserFromStorage();
