@@ -1,3 +1,8 @@
+// app.ts
+// -----------------------------------------------------------------------------
+// - Express 애플리케이션의 핵심 구성 요소(미들웨어/라우팅/에러 핸들러)를 정의
+// - 실제 서버 포트 바인딩은 server.ts가 담당하며, app.ts는 HTTP Application 자체에 집중
+// -----------------------------------------------------------------------------
 import express from "express";
 import { Request, Response, NextFunction } from "express";
 import path from "path";

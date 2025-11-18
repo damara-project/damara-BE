@@ -4,24 +4,26 @@ import logger from "jet-logger";
 import { connectDB } from "./db";
 
 /**
- * server.ts의 역할은 app.ts에서 만든 Express 앱을 실제로 실행하는 여 ㄱ할
- *
- * 비즈니스 로직이나 라우팅, 미들웨어 이런것들을 일체 하지 않음
- *
- *
+ * server.ts
+ * ---------------------------------------------------------------------------
+ * - Express 애플리케이션을 구동하는 진입점
+ * - DB 연결/초기화가 모두 끝난 뒤에만 서버를 열어 오류를 방지한다
+ * - app.ts는 라우팅/미들웨어 정의, server.ts는 실행 책임만 갖도록 분리
+ * ---------------------------------------------------------------------------
  */
 
 /**
  * 서버 시작 전 DB 초기화 및 연결
+ * - 1) MySQL 연결이 가능하지 않다면 즉시 프로세스를 중단
+ * - 2) 과제 요구사항에 따라 force: true로 테이블을 초기화
+ * - 3) 모든 준비가 끝났을 때 Express 서버를 listen
  */
 async function startServer() {
   try {
-    // 1. DB 연결 테스트
+    // 1. DB 연결 여부를 확인하여 장애를 조기에 발견
     await connectDB();
 
     // 2. DB Sync (force: true로 모든 테이블 삭제 후 재생성)
-    // ⚠️ 주의: 서버 실행 시마다 모든 데이터가 삭제됩니다!
-    // 과제 평가 시마다 DB를 초기화한 상태에서 시작하기 위함
     await syncDatabase();
 
     // 3. Express 서버 시작
@@ -29,6 +31,7 @@ async function startServer() {
       logger.info(`Server is running on port ${ENV.Port}`);
     });
   } catch (error) {
+    // 서버를 기동하지 못한 이유를 기록하고 프로세스를 종료한다.
     logger.err("Failed to start server");
     logger.err(error, true);
   }
@@ -38,7 +41,7 @@ startServer();
 
 /**
  * 주의점 강조 server.ts는 오직 서버 열기만 한다.
- * 라우터나 추가적인 미들웨어는 app.ts가서 ㄱㄱ
+ * 라우터나 추가적인 미들웨어는 app.ts의 책임으로 넘겼다.
  *
  * 서버 구성 책임인 app.ts와
  * 서버 구동 책임인 server.ts의 역할을 명확히 분리한다.
