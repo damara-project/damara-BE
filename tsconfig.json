@@ -2,24 +2,23 @@
   "compilerOptions": {
     "target": "ES2020",
     "module": "CommonJS",
-    "lib": ["ES2020"],                   
+    "lib": ["ES2020"],
     "strict": true,
-    "baseUrl": "./",
-    "esModuleInterop": true,                 
-    "skipLibCheck": true,                     
+    "esModuleInterop": true,
+    "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
+    "baseUrl": "./",
+    "rootDir": ".",
+    "outDir": "./dist",
     "paths": {
       "@src/*": ["src/*"]
     },
     "useUnknownInCatchVariables": false,
-    "types": ["vitest/globals"],
+    "types": ["vitest/globals"]
   },
   "ts-node": {
     "swc": true,
-    "require": [
-      "tsconfig-paths/register",
-      "./config.ts"
-    ],
+    "require": ["tsconfig-paths/register", "./config.ts"]
   },
   "include": [
     "src/**/*.ts",
@@ -29,7 +28,5 @@
     "eslint.config.ts",
     "vitest.config.mts"
   ],
-  "exclude": [
-    "src/public/*"
-  ]
+  "exclude": ["src/public"]
 }
