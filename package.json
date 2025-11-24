@@ -5,7 +5,7 @@
     "dev": "NODE_ENV=development ts-node --files ./src/server.ts",
     "dev:hot": "nodemon --exec \"npm run dev\" --watch ./src --ext .ts",
     "build": "tsc",
-    "start": "node dist/server.js",
+    "start": "NODE_ENV=production ts-node --files -r tsconfig-paths/register -r ./config.ts ./src/server.ts",
     "start:dev": "NODE_ENV=production ts-node --files ./src/server.ts",
     "lint": "eslint .",
     "clean-install": "rm -rf ./node_modules && rm -rf package-lock.json && npm i",
@@ -38,7 +38,10 @@
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "uuid": "^13.0.0",
-    "zod": "^4.1.12"
+    "zod": "^4.1.12",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.9.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
@@ -62,9 +65,6 @@
     "jiti": "^2.6.1",
     "nodemon": "^3.1.10",
     "supertest": "^7.1.4",
-    "ts-node": "^10.9.2",
-    "tsconfig-paths": "^4.2.0",
-    "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.3",
     "vitest": "^4.0.8"
   }
