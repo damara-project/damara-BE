@@ -18,6 +18,8 @@ import { connectDB } from "./db";
  * - 2) 과제 요구사항에 따라 force: true로 테이블을 초기화
  * - 3) 모든 준비가 끝났을 때 Express 서버를 listen
  */
+
+const PORT = process.env.PORT;
 async function startServer() {
   try {
     // 1. DB 연결 여부를 확인하여 장애를 조기에 발견
@@ -29,7 +31,7 @@ async function startServer() {
     await syncDatabase();
 
     // 3. Express 서버 시작
-    app.listen(ENV.Port, () => {
+    app.listen(PORT, () => {
       logger.info(`Server is running on port ${ENV.Port}`);
       console.log(`Server is running on port ${ENV.Port}`);
     });
