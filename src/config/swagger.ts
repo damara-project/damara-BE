@@ -1,7 +1,7 @@
 // 고급웹프로그래밍_3_최원빈_60203042
 import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
-import { Express, Request, Response } from "express";
+import { Express, Request, Response, NextFunction } from "express";
 import ENV from "@src/common/constants/ENV";
 
 // 환경 변수에서 API 베이스 URL 가져오기 (배포 환경에서 설정)
@@ -167,7 +167,8 @@ export const setupSwagger = (app: Express) => {
   app.use(
     "/api-docs",
     swaggerUi.serve,
-    (req: Request, res: Response, next) => {
+    (req: Request, res: Response, _next: NextFunction) => {
+      void _next;
       // 동적 JSON URL을 사용하도록 설정
       const swaggerHtml = swaggerUi.generateHTML(
         {

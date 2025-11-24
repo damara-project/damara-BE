@@ -1,5 +1,3 @@
-import { IParseObjectError } from 'jet-validators/utils';
-
 import HttpStatusCodes from '@src/common/constants/HttpStatusCodes';
 
 
@@ -20,14 +18,15 @@ export class RouteError extends Error {
 }
 
 /**
- * Handle "parseObj" errors.
+ * Handle validation errors.
+ * Note: Currently using RouteError directly in parseReq, but keeping this for compatibility.
  */
 export class ValidationError extends RouteError {
 
-  public static MESSAGE = 'The parseObj() function discovered one or ' + 
+  public static MESSAGE = 'The validation function discovered one or ' + 
     'more errors.';
 
-  public constructor(errors: IParseObjectError[]) {
+  public constructor(errors: unknown[]) {
     const msg = JSON.stringify({
       message: ValidationError.MESSAGE,
       errors,
