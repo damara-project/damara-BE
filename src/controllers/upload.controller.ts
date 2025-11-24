@@ -1,7 +1,7 @@
 // src/controllers/upload.controller.ts
 
 import { Request, Response, NextFunction } from "express";
-import HttpStatusCodes from "@src/common/constants/HttpStatusCodes";
+import HttpStatusCodes from "../common/constants/HttpStatusCodes";
 
 /**
  * 단일 이미지 업로드

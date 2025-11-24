@@ -9,9 +9,9 @@
  * 에러 처리는 next(error)로 넘겨 app.ts에 정의한 전역 에러 핸들러가 수행.
  */
 import { Request, Response, NextFunction } from "express";
-import { UserService } from "@src/services/UserService";
-import { parseReq } from "@src/routes/common/validation/parseReq";
-import HttpStatusCodes from "@src/common/constants/HttpStatusCodes";
+import { UserService } from "../services/UserService";
+import { parseReq } from "../routes/common/validation/parseReq";
+import HttpStatusCodes from "../common/constants/HttpStatusCodes";
 import {
   createUserSchema,
   CreateUserReq,
@@ -19,7 +19,7 @@ import {
   UpdateUserReq,
   loginSchema,
   LoginReq,
-} from "@src/routes/common/validation/user-schemas";
+} from "../routes/common/validation/user-schemas";
 
 /**
  * 회원가입

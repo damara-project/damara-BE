@@ -1,10 +1,10 @@
 // src/services/PostService.ts
 
-import { PostRepo } from "@src/repos/PostRepo";
-import { PostCreationAttributes } from "@src/models/Post";
-import { RouteError } from "@src/common/util/route-errors";
-import HttpStatusCodes from "@src/common/constants/HttpStatusCodes";
-import UserModel from "@src/models/User";
+import { PostRepo } from "../repos/PostRepo";
+import { PostCreationAttributes } from "../models/Post";
+import { RouteError } from "../common/util/route-errors";
+import HttpStatusCodes from "../common/constants/HttpStatusCodes";
+import UserModel from "../models/User";
 
 export const PostService = {
   /**

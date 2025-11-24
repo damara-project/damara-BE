@@ -1,10 +1,10 @@
 // src/models/UserModel.ts
 
 import { DataTypes, Model, Optional } from "sequelize";
-import { sequelize } from "@src/db";
+import { sequelize } from "../db";
 
 /**
- * Sequelize 인스턴스는 @src/db에서 중앙 관리됩니다.
+ * Sequelize 인스턴스는 src/db에서 중앙 관리됩니다.
  */
 
 // ----------------------------

@@ -1,9 +1,9 @@
 import { Router } from "express";
 
-import Paths from "@src/common/constants/Paths";
-import userRouter from "@src/routes/users/UserRoutes";
-import postRouter from "@src/routes/posts/PostRoutes";
-import uploadRouter from "@src/routes/upload/UploadRoutes";
+import Paths from "../common/constants/Paths";
+import userRouter from "./users/UserRoutes";
+import postRouter from "./posts/PostRoutes";
+import uploadRouter from "./upload/UploadRoutes";
 
 const BaseRouter = Router();
 

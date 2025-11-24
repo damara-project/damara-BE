@@ -1,11 +1,11 @@
 // src/repos/UserRepo.ts (Sequelize 버전)
-import { UserModel } from "@src/models/User";
+import { UserModel } from "../models/User";
 
-import { UserCreationAttributes } from "@src/models/User";
+import { UserCreationAttributes } from "../models/User";
 import {
   EmailAlreadyExistsError,
   StudentIdAlreadyExistsError,
-} from "@src/common/util/route-errors";
+} from "../common/util/route-errors";
 
 export const UserRepo = {
   /**

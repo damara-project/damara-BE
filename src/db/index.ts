@@ -2,7 +2,7 @@
 import { Sequelize } from "sequelize";
 import { URL } from "url";
 import logger from "jet-logger";
-import ENV from "@src/common/constants/ENV";
+import ENV from "../common/constants/ENV";
 
 /**
  * Sequelize 인스턴스 생성 (MySQL 연결)

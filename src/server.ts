@@ -1,4 +1,4 @@
-import app, { syncDatabase } from "@src/app";
+import app, { syncDatabase } from "./app";
 import ENV from "./common/constants/ENV";
 import logger from "jet-logger";
 import { connectDB } from "./db";

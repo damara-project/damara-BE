@@ -1,14 +1,14 @@
 // src/services/UserService.ts
 
-import { UserRepo } from "@src/repos/UserRepo";
-import { UserCreationAttributes } from "@src/models/User";
+import { UserRepo } from "../repos/UserRepo";
+import { UserCreationAttributes } from "../models/User";
 import {
   EmailAlreadyExistsError,
   RouteError,
   InvalidCredentialsError,
   StudentIdAlreadyExistsError,
-} from "@src/common/util/route-errors";
-import HttpStatusCodes from "@src/common/constants/HttpStatusCodes";
+} from "../common/util/route-errors";
+import HttpStatusCodes from "../common/constants/HttpStatusCodes";
 import bcrypt from "bcrypt";
 
 export const UserService = {

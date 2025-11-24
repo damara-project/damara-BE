@@ -1,7 +1,7 @@
 // src/models/PostImage.ts
 
 import { DataTypes, Model, Optional } from "sequelize";
-import { sequelize } from "@src/db";
+import { sequelize } from "../db";
 import PostModel from "./Post";
 
 // ----------------------------

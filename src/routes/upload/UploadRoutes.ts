@@ -1,11 +1,11 @@
 // src/routes/upload/UploadRoutes.ts
 
 import { Router } from "express";
-import { upload } from "@src/config/multer";
+import { upload } from "../../config/multer";
 import {
   uploadImage,
   uploadImages,
-} from "@src/controllers/upload.controller";
+} from "../../controllers/upload.controller";
 
 const uploadRouter = Router();
 

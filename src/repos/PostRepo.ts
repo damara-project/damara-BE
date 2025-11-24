@@ -1,9 +1,9 @@
 // src/repos/PostRepo.ts (Sequelize 버전)
 
-import { PostModel, PostCreationAttributes } from "@src/models/Post";
-import PostImageModel from "@src/models/PostImage";
-import { RouteError } from "@src/common/util/route-errors";
-import HttpStatusCodes from "@src/common/constants/HttpStatusCodes";
+import { PostModel, PostCreationAttributes } from "../models/Post";
+import PostImageModel from "../models/PostImage";
+import { RouteError } from "../common/util/route-errors";
+import HttpStatusCodes from "../common/constants/HttpStatusCodes";
 
 export const PostRepo = {
   /**

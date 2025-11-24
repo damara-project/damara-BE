@@ -100,7 +100,7 @@ setupSwagger(app);
  * API Router Mount
  * ---------------------------------------------------------------------------
  * Paths.Base === "/api"
- * => 모든 API 요청은 BaseRouter(@src/routes/index.ts)로 위임
+ * => 모든 API 요청은 BaseRouter(routes/index.ts)로 위임
  */
 app.use(Paths.Base, BaseRouter);
 

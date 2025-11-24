@@ -1,7 +1,7 @@
 // src/models/Post.ts
 
 import { DataTypes, Model, Optional } from "sequelize";
-import { sequelize } from "@src/db";
+import { sequelize } from "../db";
 import UserModel from "./User";
 
 // ----------------------------

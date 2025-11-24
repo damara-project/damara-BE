@@ -1,5 +1,5 @@
-import { RouteError } from "@src/common/util/route-errors";
-import HttpStatusCodes from "@src/common/constants/HttpStatusCodes";
+import { RouteError } from "../../../common/util/route-errors";
+import HttpStatusCodes from "../../../common/constants/HttpStatusCodes";
 import z from "zod";
 /**
  * parseReq(schema)(req.body)

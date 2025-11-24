@@ -1,16 +1,16 @@
 // src/controllers/post.controller.ts
 
 import { Request, Response, NextFunction } from "express";
-import { PostService } from "@src/services/PostService";
-import { PostCreationAttributes } from "@src/models/Post";
-import { parseReq } from "@src/routes/common/validation/parseReq";
-import HttpStatusCodes from "@src/common/constants/HttpStatusCodes";
+import { PostService } from "../services/PostService";
+import { PostCreationAttributes } from "../models/Post";
+import { parseReq } from "../routes/common/validation/parseReq";
+import HttpStatusCodes from "../common/constants/HttpStatusCodes";
 import {
   createPostSchema,
   CreatePostReq,
   updatePostSchema,
   UpdatePostReq,
-} from "@src/routes/common/validation/post-schemas";
+} from "../routes/common/validation/post-schemas";
 
 /**
  * 공동구매 상품 전체 목록
