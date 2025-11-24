@@ -72,7 +72,9 @@ app.get("/", (_: Request, res: Response) => {
  */
 export async function syncDatabase() {
   if (!ENV.DbForceSync) {
-    logger.info("DB_FORCE_SYNC=false → 기존 데이터를 유지한 채로 서버를 시작합니다.");
+    logger.info(
+      "DB_FORCE_SYNC=false → 기존 데이터를 유지한 채로 서버를 시작합니다."
+    );
     return;
   }
   try {
