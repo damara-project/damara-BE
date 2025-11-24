@@ -3,7 +3,7 @@
 // 고급웹프로그래밍_3_최원빈_60203042
 import multer from "multer";
 import path from "path";
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "crypto";
 import fs from "fs";
 
 // 업로드 디렉토리 설정
@@ -22,8 +22,8 @@ const storage = multer.diskStorage({
   filename: (req, file, cb) => {
     // 원본 파일명의 확장자 추출
     const ext = path.extname(file.originalname);
-    // UUID로 고유한 파일명 생성
-    const filename = `${uuidv4()}${ext}`;
+    // UUID로 고유한 파일명 생성 (Node.js 내장 crypto.randomUUID 사용)
+    const filename = `${randomUUID()}${ext}`;
     cb(null, filename);
   },
 });
