@@ -1,6 +1,5 @@
 // src/config/multer.ts
 
-// 고급웹프로그래밍_3_최원빈_60203042
 import multer from "multer";
 import path from "path";
 import { randomUUID } from "crypto";
@@ -55,4 +54,3 @@ export const upload = multer({
   },
   fileFilter,
 });
-

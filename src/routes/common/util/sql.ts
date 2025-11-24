@@ -34,7 +34,6 @@
  * `UPDATE users SET ${setClause} WHERE id = $n`
  * 형태로 사용하면 된다.
  */
-// 고급웹프로그래밍_3_최원빈_60203042
 export function buildUpdateSet<T extends Record<string, unknown>>(
   // T는 객체 타입이다.
   // 예: data = { nickname: '길동', bio: '안녕' } 일 때

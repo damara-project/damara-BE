@@ -1,4 +1,3 @@
-// 고급웹프로그래밍_3_최원빈_60203042
 // src/repos/PostRepo.ts (Sequelize 버전)
 
 import { PostModel, PostCreationAttributes } from "@src/models/Post";
@@ -157,4 +156,3 @@ export const PostRepo = {
     }
   },
 };
-

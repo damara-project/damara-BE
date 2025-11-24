@@ -1,4 +1,3 @@
-// 고급웹프로그래밍_3_최원빈_60203042
 // src/public/scripts/posts.js
 
 const API_BASE = '/api/posts';
@@ -203,4 +202,3 @@ document.addEventListener('submit', async (e) => {
     }
   }
 });
-

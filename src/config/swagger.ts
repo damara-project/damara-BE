@@ -1,4 +1,3 @@
-// 고급웹프로그래밍_3_최원빈_60203042
 import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
 import { Express, Request, Response, NextFunction } from "express";
@@ -203,4 +202,3 @@ export const setupSwagger = (app: Express) => {
 };
 
 export default swaggerSpec;
-

@@ -14,6 +14,10 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3000),
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   API_BASE_URL: z.string().url().optional(),
+  DB_FORCE_SYNC: z
+    .string()
+    .optional()
+    .transform((val) => val === "true"),
 });
 
 const parsed = envSchema.parse({
@@ -21,6 +25,7 @@ const parsed = envSchema.parse({
   PORT: process.env.PORT,
   DATABASE_URL: process.env.DATABASE_URL,
   API_BASE_URL: process.env.API_BASE_URL,
+  DB_FORCE_SYNC: process.env.DB_FORCE_SYNC,
 });
 
 const ENV = {
@@ -28,6 +33,7 @@ const ENV = {
   Port: parsed.PORT,
   DatabaseUrl: parsed.DATABASE_URL,
   ApiBaseUrl: parsed.API_BASE_URL || `http://localhost:${parsed.PORT}`,
+  DbForceSync: parsed.DB_FORCE_SYNC ?? false,
 };
 
 /******************************************************************************

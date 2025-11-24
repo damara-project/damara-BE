@@ -1,4 +1,3 @@
-// 고급웹프로그래밍_3_최원빈_60203042
 // src/services/UserService.ts
 
 import { UserRepo } from "@src/repos/UserRepo";

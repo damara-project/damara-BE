@@ -1,4 +1,3 @@
-// 고급웹프로그래밍_3_최원빈_60203042
 // src/public/scripts/users.js
 
 const API_BASE = '/api/users';
@@ -187,4 +186,3 @@ document.getElementById('refresh-users-btn').addEventListener('click', () => {
 
 // 페이지 로드 시 회원 목록 불러오기
 loadUsers();
-

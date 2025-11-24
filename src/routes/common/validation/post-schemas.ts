@@ -1,4 +1,3 @@
-// 고급웹프로그래밍_3_최원빈_60203042
 import z from "zod";
 
 /**
@@ -45,4 +44,3 @@ export const updatePostSchema = z.object({
 });
 
 export type UpdatePostReq = z.infer<typeof updatePostSchema>;
-

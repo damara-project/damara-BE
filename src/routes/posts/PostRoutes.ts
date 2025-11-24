@@ -1,4 +1,3 @@
-// 고급웹프로그래밍_3_최원빈_60203042
 import { Router } from "express";
 
 import {
@@ -214,4 +213,3 @@ postRouter.put("/:id", updatePost);
 postRouter.delete("/:id", deletePost);
 
 export default postRouter;
-

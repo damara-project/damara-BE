@@ -1,4 +1,3 @@
-// 고급웹프로그래밍_3_최원빈_60203042
 import app, { syncDatabase } from "@src/app";
 import ENV from "./common/constants/ENV";
 import logger from "jet-logger";

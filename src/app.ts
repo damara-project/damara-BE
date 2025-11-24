@@ -1,4 +1,3 @@
-// 고급웹프로그래밍_3_최원빈_60203042
 // app.ts
 // -----------------------------------------------------------------------------
 // - Express 애플리케이션의 핵심 구성 요소(미들웨어/라우팅/에러 핸들러)를 정의
@@ -17,6 +16,7 @@ import UserModel from "./models/User";
 import PostModel from "./models/Post";
 import PostImageModel from "./models/PostImage";
 import { setupSwagger } from "./config/swagger";
+import ENV from "./common/constants/ENV";
 
 const app = express();
 
@@ -71,9 +71,11 @@ app.get("/", (_: Request, res: Response) => {
  * (과제 요구사항: 항상 동일한 초기 상태 보장)
  */
 export async function syncDatabase() {
+  if (!ENV.DbForceSync) {
+    logger.info("DB_FORCE_SYNC=false → 기존 데이터를 유지한 채로 서버를 시작합니다.");
+    return;
+  }
   try {
-    // force: true는 기존 테이블을 모두 삭제하고 새로 생성합니다.
-    // ⚠️ 주의: 서버 실행 시마다 모든 데이터가 삭제됩니다!
     await sequelize.sync({ force: true });
     logger.info("✓ 데이터베이스 테이블이 초기화되었습니다 (force: true)");
   } catch (error) {
