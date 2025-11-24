@@ -25,17 +25,28 @@ const candidateEnvPaths = [
   path.join(rootDir, '.env'),
 ];
 
-let envLoaded = false;
-for (const envPath of candidateEnvPaths) {
-  if (fs.existsSync(envPath)) {
-    dotenv.config({ path: envPath });
-    envLoaded = true;
-    break;
-  }
-}
+const isManagedEnv =
+  Boolean(process.env.RAILWAY_ENVIRONMENT) ||
+  Boolean(process.env.RAILWAY_ENVIRONMENT_NAME) ||
+  Boolean(process.env.RAILWAY_PROJECT_ID);
 
-if (!envLoaded) {
-  dotenv.config();
+let envLoaded = false;
+if (!isManagedEnv) {
+  for (const envPath of candidateEnvPaths) {
+    if (fs.existsSync(envPath)) {
+      dotenv.config({ path: envPath });
+      envLoaded = true;
+      break;
+    }
+  }
+
+  if (!envLoaded) {
+    dotenv.config();
+  }
+} else {
+  console.log(
+    '[config] Managed environment detected (e.g. Railway); skipping local .env.* files.',
+  );
 }
 
 // Configure moduleAlias
