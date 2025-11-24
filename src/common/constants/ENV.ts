@@ -2,11 +2,12 @@
 
 import { NodeEnvs } from ".";
 import { z } from "zod";
-
+import dotenv from "dotenv";
 /******************************************************************************
                                  Setup
 ******************************************************************************/
 
+dotenv.config();
 const envSchema = z.object({
   NODE_ENV: z
     .enum([NodeEnvs.Dev, NodeEnvs.Test, NodeEnvs.Production])

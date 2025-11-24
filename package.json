@@ -3,12 +3,9 @@
   "version": "0.0.0",
   "scripts": {
     "dev": "NODE_ENV=development ts-node --files ./src/server.ts",
-    "dev:hot": "nodemon --exec \"npm run dev\" --watch ./src --ext .ts",
     "build": "tsc",
-    "start": "NODE_ENV=production ts-node --files -r tsconfig-paths/register -r ./config.ts ./src/server.ts",
-    "start:dev": "NODE_ENV=production ts-node --files ./src/server.ts",
+    "start": "NODE_ENV=production node dist/src/server.js",
     "lint": "eslint .",
-    "clean-install": "rm -rf ./node_modules && rm -rf package-lock.json && npm i",
     "test": "NODE_ENV=test vitest",
     "type-check": "tsc --noEmit"
   },
