@@ -16,6 +16,7 @@ import { sequelize } from "./db";
 import UserModel from "./models/User";
 import PostModel from "./models/Post";
 import PostImageModel from "./models/PostImage";
+import { setupSwagger } from "./config/swagger";
 
 const app = express();
 
@@ -81,6 +82,14 @@ export async function syncDatabase() {
     throw error;
   }
 }
+
+/**
+ * ---------------------------------------------------------------------------
+ * Swagger API Documentation
+ * ---------------------------------------------------------------------------
+ * /api-docs 에서 Swagger UI 확인 가능
+ */
+setupSwagger(app);
 
 /**
  * ---------------------------------------------------------------------------
