@@ -104,6 +104,40 @@ Run the production build (Must be built first).
 Check for typescript errors.
 
 
+## API Documentation (Swagger)
+
+프로젝트에는 Swagger UI가 내장되어 있어 API 문서를 쉽게 확인하고 테스트할 수 있습니다.
+
+### 접근 방법
+
+서버 실행 후 브라우저에서 다음 URL로 접속:
+
+- **로컬 개발**: `http://localhost:3000/api-docs`
+- **배포 환경**: `https://your-domain.com/api-docs`
+
+### 배포 환경 설정
+
+배포 환경에서 다른 개발자들이 Swagger 문서를 볼 수 있도록 하려면:
+
+1. **환경 변수 설정** (`.env.production` 또는 배포 환경 설정):
+   ```bash
+   API_BASE_URL=https://your-api-domain.com
+   ```
+
+2. **동적 서버 URL**: 
+   - `API_BASE_URL`이 설정되지 않으면, Swagger는 요청하는 서버의 현재 URL을 자동으로 사용합니다.
+   - 배포된 서버에서 `https://your-domain.com/api-docs`로 접속하면 자동으로 해당 URL이 서버 URL로 설정됩니다.
+
+3. **JSON 스펙 다운로드**:
+   - `/api-docs.json` 엔드포인트에서 OpenAPI JSON 스펙을 다운로드할 수 있습니다.
+
+### Swagger에서 할 수 있는 것
+
+- 모든 API 엔드포인트 목록 확인
+- 각 API의 요청/응답 스키마 확인
+- "Try it out" 버튼으로 API 직접 테스트
+- 인증이 필요한 경우 (향후 구현 시) 인증 토큰 설정
+
 ## Additional Notes
 
 - If `npm run dev` gives you issues with bcrypt on MacOS you may need to run: `npm rebuild bcrypt --build-from-source`. 

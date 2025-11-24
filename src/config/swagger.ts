@@ -1,7 +1,13 @@
 // 고급웹프로그래밍_3_최원빈_60203042
 import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
-import { Express } from "express";
+import { Express, Request, Response } from "express";
+import ENV from "@src/common/constants/ENV";
+
+// 환경 변수에서 API 베이스 URL 가져오기 (배포 환경에서 설정)
+const getServerUrl = () => {
+  return ENV.ApiBaseUrl;
+};
 
 const options: swaggerJsdoc.Options = {
   definition: {
@@ -18,8 +24,8 @@ const options: swaggerJsdoc.Options = {
     },
     servers: [
       {
-        url: "http://localhost:3000",
-        description: "Development server",
+        url: getServerUrl(),
+        description: ENV.NodeEnv === "production" ? "Production server" : "Development server",
       },
     ],
     components: {
@@ -119,8 +125,80 @@ const options: swaggerJsdoc.Options = {
 
 const swaggerSpec = swaggerJsdoc(options);
 
+/**
+ * Swagger UI 설정
+ * - 환경 변수 API_BASE_URL이 설정되어 있으면 해당 URL 사용
+ * - 없으면 요청의 현재 서버 URL을 자동으로 사용 (동적)
+ * - 배포 환경에서는 API_BASE_URL=https://your-domain.com 으로 설정
+ * 
+ * 사용법:
+ *   - 개발: http://localhost:3000/api-docs
+ *   - 배포: https://your-domain.com/api-docs
+ *   - 환경 변수로 API_BASE_URL 설정 시 해당 URL이 기본 서버로 설정됨
+ */
 export const setupSwagger = (app: Express) => {
-  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+  // Swagger JSON 엔드포인트 (동적 서버 URL 포함)
+  // 각 요청마다 현재 서버의 URL을 동적으로 설정
+  app.get("/api-docs.json", (req: Request, res: Response) => {
+    const currentServerUrl = `${req.protocol}://${req.get("host")}`;
+    
+    const dynamicSpec = {
+      ...swaggerSpec,
+      servers: [
+        {
+          url: currentServerUrl,
+          description: "Current server (자동 감지)",
+        },
+        ...(ENV.ApiBaseUrl && ENV.ApiBaseUrl !== currentServerUrl
+          ? [
+              {
+                url: ENV.ApiBaseUrl,
+                description: "Configured API Base URL",
+              },
+            ]
+          : []),
+      ],
+    };
+
+    res.json(dynamicSpec);
+  });
+
+  // Swagger UI - 동적 JSON을 참조하도록 설정
+  app.use(
+    "/api-docs",
+    swaggerUi.serve,
+    (req: Request, res: Response, next) => {
+      // 동적 JSON URL을 사용하도록 설정
+      const swaggerHtml = swaggerUi.generateHTML(
+        {
+          ...swaggerSpec,
+          servers: [
+            {
+              url: `${req.protocol}://${req.get("host")}`,
+              description: "Current server (자동 감지)",
+            },
+            ...(ENV.ApiBaseUrl && ENV.ApiBaseUrl !== `${req.protocol}://${req.get("host")}`
+              ? [
+                  {
+                    url: ENV.ApiBaseUrl,
+                    description: "Configured API Base URL",
+                  },
+                ]
+              : []),
+          ],
+        },
+        {
+          swaggerOptions: {
+            persistAuthorization: true,
+            url: "/api-docs.json", // 동적 JSON 참조
+          },
+          customCss: ".swagger-ui .topbar { display: none }",
+        },
+      );
+
+      res.send(swaggerHtml);
+    },
+  );
 };
 
 export default swaggerSpec;
