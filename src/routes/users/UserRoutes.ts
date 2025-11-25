@@ -55,19 +55,53 @@ userRouter.get("/", getAllUsers);
  *           schema:
  *             type: object
  *             required:
- *               - email
- *               - password
- *               - studentId
+ *               - user
  *             properties:
- *               email:
- *                 type: string
- *                 format: email
- *               password:
- *                 type: string
- *                 format: password
- *               studentId:
- *                 type: string
- *                 description: 학번
+ *               user:
+ *                 type: object
+ *                 required:
+ *                   - email
+ *                   - passwordHash
+ *                   - nickname
+ *                   - studentId
+ *                 properties:
+ *                   email:
+ *                     type: string
+ *                     format: email
+ *                     example: "test@mju.ac.kr"
+ *                     description: 명지대학교 이메일 형식 권장
+ *                   passwordHash:
+ *                     type: string
+ *                     minLength: 8
+ *                     format: password
+ *                     example: "mypassword123"
+ *                     description: 비밀번호 (8자 이상, 평문으로 전송하면 서버에서 해시화)
+ *                   nickname:
+ *                     type: string
+ *                     minLength: 2
+ *                     example: "홍길동"
+ *                     description: 닉네임 (2자 이상)
+ *                   studentId:
+ *                     type: string
+ *                     example: "20241234"
+ *                     description: 학번 (필수, unique)
+ *                   department:
+ *                     type: string
+ *                     example: "컴퓨터공학과"
+ *                     description: 학과/부서 (선택사항)
+ *                   avatarUrl:
+ *                     type: string
+ *                     format: uri
+ *                     example: "https://example.com/avatar.jpg"
+ *                     description: 프로필 이미지 URL (선택사항)
+ *           example:
+ *             user:
+ *               email: "test@mju.ac.kr"
+ *               passwordHash: "mypassword123"
+ *               nickname: "홍길동"
+ *               studentId: "20241234"
+ *               department: "컴퓨터공학과"
+ *               avatarUrl: "https://example.com/avatar.jpg"
  *     responses:
  *       201:
  *         description: 회원가입 성공
@@ -136,6 +170,7 @@ userRouter.post("/login", login);
  *         required: true
  *         schema:
  *           type: string
+ *           format: uuid
  *         description: 사용자 UUID
  *     requestBody:
  *       required: true
@@ -143,15 +178,33 @@ userRouter.post("/login", login);
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - user
  *             properties:
- *               email:
- *                 type: string
- *                 format: email
- *               password:
- *                 type: string
- *                 format: password
- *               studentId:
- *                 type: string
+ *               user:
+ *                 type: object
+ *                 properties:
+ *                   email:
+ *                     type: string
+ *                     format: email
+ *                   passwordHash:
+ *                     type: string
+ *                     minLength: 8
+ *                     format: password
+ *                   nickname:
+ *                     type: string
+ *                     minLength: 2
+ *                   studentId:
+ *                     type: string
+ *                   department:
+ *                     type: string
+ *                   avatarUrl:
+ *                     type: string
+ *                     format: uri
+ *           example:
+ *             user:
+ *               nickname: "수정된닉네임"
+ *               department: "수정된학과"
  *     responses:
  *       200:
  *         description: 수정 성공

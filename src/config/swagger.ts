@@ -31,33 +31,52 @@ const options: swaggerJsdoc.Options = {
       schemas: {
         User: {
           type: "object",
-          required: ["email", "password", "studentId"],
+          required: ["id", "email", "nickname", "studentId"],
           properties: {
             id: {
               type: "string",
+              format: "uuid",
               description: "사용자 UUID",
+              example: "123e4567-e89b-12d3-a456-426614174000",
             },
             email: {
               type: "string",
               format: "email",
               description: "이메일 주소",
+              example: "test@mju.ac.kr",
             },
-            password: {
+            nickname: {
               type: "string",
-              format: "password",
-              description: "비밀번호 (bcrypt 해시)",
+              description: "닉네임",
+              example: "홍길동",
             },
             studentId: {
               type: "string",
               description: "학번",
+              example: "20241234",
+            },
+            department: {
+              type: "string",
+              nullable: true,
+              description: "학과/부서",
+              example: "컴퓨터공학과",
+            },
+            avatarUrl: {
+              type: "string",
+              format: "uri",
+              nullable: true,
+              description: "프로필 이미지 URL",
+              example: "https://example.com/avatar.jpg",
             },
             createdAt: {
               type: "string",
               format: "date-time",
+              description: "생성일시",
             },
             updatedAt: {
               type: "string",
               format: "date-time",
+              description: "수정일시",
             },
           },
         },
