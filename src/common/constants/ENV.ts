@@ -3,11 +3,33 @@
 import { NodeEnvs } from ".";
 import { z } from "zod";
 import dotenv from "dotenv";
+import fs from "fs";
+import path from "path";
 /******************************************************************************
                                  Setup
 ******************************************************************************/
 
-dotenv.config();
+// 환경별 설정 파일 우선 로드
+const NODE_ENV = process.env.NODE_ENV ?? "development";
+const rootDir = path.resolve(__dirname, "../../..");
+const candidateEnvPaths = [
+  path.join(rootDir, "config", `.env.${NODE_ENV}`),
+  path.join(rootDir, `.env.${NODE_ENV}`),
+  path.join(rootDir, ".env"),
+];
+
+let envLoaded = false;
+for (const envPath of candidateEnvPaths) {
+  if (fs.existsSync(envPath)) {
+    dotenv.config({ path: envPath });
+    envLoaded = true;
+    break;
+  }
+}
+
+if (!envLoaded) {
+  dotenv.config();
+}
 const envSchema = z.object({
   NODE_ENV: z
     .enum([NodeEnvs.Dev, NodeEnvs.Test, NodeEnvs.Production])
@@ -18,6 +40,7 @@ const envSchema = z.object({
   DB_USER: z.string().min(1, "DB_USER is required"),
   DB_PASSWORD: z.string().min(1, "DB_PASSWORD is required"),
   DB_NAME: z.string().min(1, "DB_NAME is required"),
+  DB_PORT: z.coerce.number().int().positive().optional().default(3306),
 
   API_BASE_URL: z.string().url().optional(),
   DB_FORCE_SYNC: z
@@ -34,6 +57,7 @@ const parsed = envSchema.parse({
   DB_USER: process.env.DB_USER,
   DB_PASSWORD: process.env.DB_PASSWORD,
   DB_NAME: process.env.DB_NAME,
+  DB_PORT: process.env.DB_PORT,
 
   API_BASE_URL: process.env.API_BASE_URL,
   DB_FORCE_SYNC: process.env.DB_FORCE_SYNC,
@@ -47,6 +71,7 @@ const ENV = {
   DbUser: parsed.DB_USER,
   DbPassword: parsed.DB_PASSWORD,
   DbName: parsed.DB_NAME,
+  DbPort: parsed.DB_PORT,
 
   ApiBaseUrl: parsed.API_BASE_URL || `http://localhost:${parsed.PORT}`,
   DbForceSync: parsed.DB_FORCE_SYNC ?? false,

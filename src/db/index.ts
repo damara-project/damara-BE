@@ -13,8 +13,22 @@ export const sequelize = new Sequelize(
   ENV.DbPassword, // password
   {
     host: ENV.DbHost,
+    port: ENV.DbPort,
     dialect: "mysql",
     logging: false,
+    dialectOptions: {
+      connectTimeout: 60000, // 60초 타임아웃
+      // macOS에서 소켓 파일 사용 시
+      ...(ENV.DbHost === "localhost" && {
+        socketPath: "/tmp/mysql.sock",
+      }),
+    },
+    pool: {
+      max: 5,
+      min: 0,
+      acquire: 60000,
+      idle: 10000,
+    },
   }
 );
 
