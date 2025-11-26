@@ -7,6 +7,7 @@ import express from "express";
 import { Request, Response, NextFunction } from "express";
 import path from "path";
 import logger from "jet-logger";
+import cors from "cors";
 import BaseRouter from "./routes";
 import Paths from "./common/constants/Paths";
 import HttpStatusCodes from "./common/constants/HttpStatusCodes";
@@ -24,9 +25,18 @@ const app = express();
  * ---------------------------------------------------------------------------
  * Global Middleware
  * ---------------------------------------------------------------------------
+ * - CORS : 모든 origin 허용 (개발/테스트용)
  * - express.json : JSON Body 파싱
  * - express.urlencoded : form-urlencoded 파싱 (프론트 HTML 폼 대응)
  */
+app.use(
+  cors({
+    origin: "*", // 모든 origin 허용
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
