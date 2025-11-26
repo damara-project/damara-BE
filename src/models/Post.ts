@@ -34,10 +34,10 @@ export interface PostAttributes {
 export type PostCreationAttributes = Optional<
   PostAttributes,
   | "id"
-  | "minParticipants"
+  // | "minParticipants"
   | "currentQuantity"
   | "status"
-  | "pickupLocation"
+  // | "pickupLocation"
   | "createdAt"
   | "updatedAt"
 >;
