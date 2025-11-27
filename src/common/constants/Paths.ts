@@ -1,17 +1,19 @@
-
 export default {
-  Base: '/api',
+  Base: "/api",
   Users: {
-    Base: '/users',
-    Get: '/all',
-    Add: '/add',
-    Update: '/update',
-    Delete: '/delete/:id',
+    Base: "/users",
+    Get: "/all",
+    Add: "/add",
+    Update: "/update",
+    Delete: "/delete/:id",
   },
   Posts: {
-    Base: '/posts',
+    Base: "/posts",
   },
   Upload: {
-    Base: '/upload',
+    Base: "/upload",
+  },
+  Chat: {
+    Base: "/chat",
   },
 } as const;

@@ -172,6 +172,122 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
+        ChatRoom: {
+          type: "object",
+          required: ["id", "postId"],
+          properties: {
+            id: {
+              type: "string",
+              format: "uuid",
+              description: "채팅방 UUID",
+              example: "123e4567-e89b-12d3-a456-426614174000",
+            },
+            postId: {
+              type: "string",
+              format: "uuid",
+              description: "게시글 UUID",
+              example: "123e4567-e89b-12d3-a456-426614174000",
+            },
+            post: {
+              type: "object",
+              description: "연결된 게시글 정보",
+              properties: {
+                id: {
+                  type: "string",
+                  format: "uuid",
+                },
+                title: {
+                  type: "string",
+                },
+                authorId: {
+                  type: "string",
+                  format: "uuid",
+                },
+              },
+            },
+            createdAt: {
+              type: "string",
+              format: "date-time",
+              description: "생성일시",
+            },
+            updatedAt: {
+              type: "string",
+              format: "date-time",
+              description: "수정일시",
+            },
+          },
+        },
+        Message: {
+          type: "object",
+          required: ["id", "chatRoomId", "senderId", "content", "messageType"],
+          properties: {
+            id: {
+              type: "string",
+              format: "uuid",
+              description: "메시지 UUID",
+              example: "123e4567-e89b-12d3-a456-426614174000",
+            },
+            chatRoomId: {
+              type: "string",
+              format: "uuid",
+              description: "채팅방 UUID",
+              example: "123e4567-e89b-12d3-a456-426614174000",
+            },
+            senderId: {
+              type: "string",
+              format: "uuid",
+              description: "발신자 UUID",
+              example: "a87522bd-bc79-47b0-a73f-46ea4068a158",
+            },
+            content: {
+              type: "string",
+              description: "메시지 내용",
+              example: "안녕하세요! 공동구매 참여하고 싶습니다.",
+            },
+            messageType: {
+              type: "string",
+              enum: ["text", "image", "file"],
+              description: "메시지 타입",
+              example: "text",
+            },
+            isRead: {
+              type: "boolean",
+              description: "읽음 여부",
+              example: false,
+            },
+            sender: {
+              type: "object",
+              description: "발신자 정보",
+              properties: {
+                id: {
+                  type: "string",
+                  format: "uuid",
+                },
+                nickname: {
+                  type: "string",
+                },
+                avatarUrl: {
+                  type: "string",
+                  format: "uri",
+                  nullable: true,
+                },
+                studentId: {
+                  type: "string",
+                },
+              },
+            },
+            createdAt: {
+              type: "string",
+              format: "date-time",
+              description: "생성일시",
+            },
+            updatedAt: {
+              type: "string",
+              format: "date-time",
+              description: "수정일시",
+            },
+          },
+        },
         Error: {
           type: "object",
           properties: {
