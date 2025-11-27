@@ -145,11 +145,12 @@
           <span style="font-size: 1.8rem">💬</span> 실시간 채팅
         </a>
         <div class="navbar-nav ms-auto">
-          <a class="btn btn-outline-secondary btn-sm me-2" href="/">
-            홈으로
-          </a>
+          <a class="btn btn-outline-secondary btn-sm me-2" href="/"> 홈으로 </a>
           <span class="align-middle me-2">
-            <span class="connection-status disconnected" id="connection-status"></span>
+            <span
+              class="connection-status disconnected"
+              id="connection-status"
+            ></span>
             <span id="connection-text">연결 중...</span>
           </span>
         </div>
@@ -195,7 +196,11 @@
       </div>
 
       <!-- 채팅 컨테이너 -->
-      <div class="chat-container shadow-lg" id="chat-container" style="display: none">
+      <div
+        class="chat-container shadow-lg"
+        id="chat-container"
+        style="display: none"
+      >
         <div class="chat-header">
           <div class="d-flex justify-content-between align-items-center">
             <div>
@@ -263,6 +268,11 @@
         socket.on("connect", () => {
           console.log("✓ 서버에 연결되었습니다:", socket.id);
           updateConnectionStatus(true);
+
+          // 자동 입장이 설정되어 있으면 입장
+          if (shouldAutoJoin && autoJoinChatRoomId && autoJoinUserId) {
+            joinChatRoom(autoJoinChatRoomId, autoJoinUserId);
+          }
         });
 
         socket.on("disconnect", () => {
@@ -273,7 +283,9 @@
         socket.on("connect_error", (error) => {
           console.error("✗ 연결 오류:", error);
           updateConnectionStatus(false);
-          showSystemMessage("서버 연결에 실패했습니다. 서버가 실행 중인지 확인하세요.");
+          showSystemMessage(
+            "서버 연결에 실패했습니다. 서버가 실행 중인지 확인하세요."
+          );
         });
 
         // 메시지 수신
@@ -302,7 +314,9 @@
         // 에러 처리
         socket.on("error", (error) => {
           console.error("에러:", error);
-          showSystemMessage(`오류: ${error.message || "알 수 없는 오류가 발생했습니다."}`);
+          showSystemMessage(
+            `오류: ${error.message || "알 수 없는 오류가 발생했습니다."}`
+          );
         });
       }
 
@@ -319,11 +333,8 @@
         }
       }
 
-      // 채팅방 입장
-      joinRoomBtn.addEventListener("click", () => {
-        const chatRoomId = chatRoomIdInput.value.trim();
-        const userId = userIdInput.value.trim();
-
+      // 채팅방 입장 함수
+      function joinChatRoom(chatRoomId, userId) {
         if (!chatRoomId || !userId) {
           alert("채팅방 ID와 사용자 ID를 모두 입력해주세요.");
           return;
@@ -355,6 +366,13 @@
 
         // 메시지 히스토리 로드
         loadMessageHistory(chatRoomId);
+      }
+
+      // 채팅방 입장 버튼 클릭 이벤트
+      joinRoomBtn.addEventListener("click", () => {
+        const chatRoomId = chatRoomIdInput.value.trim();
+        const userId = userIdInput.value.trim();
+        joinChatRoom(chatRoomId, userId);
       });
 
       // 채팅방 나가기
@@ -412,10 +430,13 @@
         }`;
 
         const senderName = message.sender?.nickname || "알 수 없음";
-        const messageTime = new Date(message.createdAt).toLocaleTimeString("ko-KR", {
-          hour: "2-digit",
-          minute: "2-digit",
-        });
+        const messageTime = new Date(message.createdAt).toLocaleTimeString(
+          "ko-KR",
+          {
+            hour: "2-digit",
+            minute: "2-digit",
+          }
+        );
 
         messageDiv.innerHTML = `
           <div class="message-sender">${senderName}</div>
@@ -461,6 +482,108 @@
         return div.innerHTML;
       }
 
+      // URL 파라미터에서 정보 가져오기
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlPostId = urlParams.get("postId");
+      const urlUserId = urlParams.get("userId");
+      const urlChatRoomId = urlParams.get("chatRoomId");
+
+      // 자동 입장 플래그
+      let shouldAutoJoin = false;
+      let autoJoinChatRoomId = null;
+      let autoJoinUserId = null;
+
+      // URL 파라미터가 있으면 자동 입장 준비
+      if (urlPostId && urlUserId) {
+        chatRoomIdInput.value = urlChatRoomId || "";
+        userIdInput.value = urlUserId;
+        shouldAutoJoin = true;
+        autoJoinUserId = urlUserId;
+
+        // Post ID로 채팅방 조회/생성
+        if (urlChatRoomId) {
+          // 채팅방 ID가 있으면 바로 사용
+          autoJoinChatRoomId = urlChatRoomId;
+        } else {
+          // Post ID만 있으면 채팅방 조회/생성
+          fetch(`/api/chat/rooms/post/${urlPostId}`)
+            .then((response) => response.json())
+            .then((chatRoom) => {
+              chatRoomIdInput.value = chatRoom.id;
+              autoJoinChatRoomId = chatRoom.id;
+              // Socket.io 연결이 완료되었으면 바로 입장
+              if (socket && socket.connected) {
+                joinChatRoom(chatRoom.id, urlUserId);
+              }
+            })
+            .catch((error) => {
+              console.error("채팅방 조회 실패:", error);
+              showSystemMessage("채팅방을 불러오는 중 오류가 발생했습니다.");
+            });
+        }
+      }
+
+      // Socket.io 연결
+      function connectSocket() {
+        socket = io("http://localhost:3000", {
+          transports: ["websocket", "polling"],
+        });
+
+        socket.on("connect", () => {
+          console.log("✓ 서버에 연결되었습니다:", socket.id);
+          updateConnectionStatus(true);
+
+          // 자동 입장이 설정되어 있으면 입장
+          if (shouldAutoJoin && autoJoinChatRoomId && autoJoinUserId) {
+            joinChatRoom(autoJoinChatRoomId, autoJoinUserId);
+          }
+        });
+
+        socket.on("disconnect", () => {
+          console.log("✗ 서버 연결이 끊어졌습니다");
+          updateConnectionStatus(false);
+        });
+
+        socket.on("connect_error", (error) => {
+          console.error("✗ 연결 오류:", error);
+          updateConnectionStatus(false);
+          showSystemMessage(
+            "서버 연결에 실패했습니다. 서버가 실행 중인지 확인하세요."
+          );
+        });
+
+        // 메시지 수신
+        socket.on("receive_message", (message) => {
+          console.log("메시지 수신:", message);
+          displayMessage(message);
+        });
+
+        // 사용자 입장 알림
+        socket.on("user_joined", (data) => {
+          console.log("사용자 입장:", data);
+          showSystemMessage(`사용자가 채팅방에 입장했습니다.`);
+        });
+
+        // 사용자 퇴장 알림
+        socket.on("user_left", (data) => {
+          console.log("사용자 퇴장:", data);
+          showSystemMessage(`사용자가 채팅방을 나갔습니다.`);
+        });
+
+        // 메시지 읽음 처리 알림
+        socket.on("message_read", (data) => {
+          console.log("메시지 읽음:", data);
+        });
+
+        // 에러 처리
+        socket.on("error", (error) => {
+          console.error("에러:", error);
+          showSystemMessage(
+            `오류: ${error.message || "알 수 없는 오류가 발생했습니다."}`
+          );
+        });
+      }
+
       // 페이지 로드 시 Socket.io 연결
       connectSocket();
 
@@ -477,4 +600,3 @@
     </script>
   </body>
 </html>
-

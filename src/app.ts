@@ -16,6 +16,14 @@ import { sequelize } from "./db";
 import { setupSwagger } from "./config/swagger";
 import ENV from "./common/constants/ENV";
 
+// 모든 모델을 import하여 Sequelize가 테이블을 인식하도록 함
+import "./models/User";
+import "./models/Post";
+import "./models/PostImage";
+import "./models/ChatRoom";
+import "./models/Message";
+import "./models/PostParticipant";
+
 const app = express();
 
 /**
@@ -92,6 +100,14 @@ app.get("/", (_: Request, res: Response) => {
 export async function syncDatabase() {
   if (!ENV.DbForceSync) {
     logger.info("DB_FORCE_SYNC=false → 기존 데이터 유지");
+    // force sync가 false여도 누락된 테이블은 생성하도록 alter 옵션 사용
+    try {
+      await sequelize.sync({ alter: true });
+      logger.info("✓ 데이터베이스 테이블 동기화 완료 (alter 모드)");
+    } catch (error) {
+      logger.warn("데이터베이스 테이블 동기화 중 경고 발생 (무시 가능)");
+      logger.warn(error, true);
+    }
     return;
   }
   try {

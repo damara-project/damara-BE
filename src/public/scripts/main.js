@@ -187,6 +187,33 @@ function updateUIForLoggedInUser() {
 }
 
 /**
+ * 모든 게시글 카드의 참여 상태 초기화 (로그아웃 시)
+ */
+function resetAllPostParticipationStatus() {
+  // 모든 참여 상태 컨테이너 숨기기
+  const allJoinedContainers = document.querySelectorAll(
+    ".joined-status-container"
+  );
+  allJoinedContainers.forEach((container) => {
+    container.classList.add("d-none");
+  });
+
+  // 모든 참여하기 버튼 표시
+  const allJoinBtns = document.querySelectorAll(".join-post-btn");
+  allJoinBtns.forEach((btn) => {
+    btn.classList.remove("d-none");
+  });
+
+  // 상세 모달이 열려있으면 닫기
+  const detailModal = bootstrap.Modal.getInstance(
+    document.getElementById("postDetailModal")
+  );
+  if (detailModal) {
+    detailModal.hide();
+  }
+}
+
+/**
  * 로그아웃 상태 UI 업데이트
  */
 function updateUIForLoggedOutUser() {
@@ -201,6 +228,63 @@ function updateUIForLoggedOutUser() {
   if (registerBtnParent) registerBtnParent.classList.remove("d-none");
   if (currentUserDisplay) currentUserDisplay.classList.add("d-none");
   if (userInfoSection) userInfoSection.classList.add("d-none");
+
+  // 게시글 참여 상태 초기화
+  resetAllPostParticipationStatus();
+
+  // 게시글 목록 다시 로드하여 UI 초기화
+  loadPosts();
+}
+
+/**
+ * 게시글의 참여 여부 확인
+ */
+async function checkParticipationStatus(postId) {
+  if (!currentUser || !currentUser.id) {
+    return false;
+  }
+
+  try {
+    const checkUrl = `${API_BASE_POSTS}/${postId}/participate/${currentUser.id}`;
+    const checkResponse = await fetch(checkUrl);
+
+    if (checkResponse.ok) {
+      const checkData = await checkResponse.json();
+      return checkData.isParticipant || false;
+    }
+    return false;
+  } catch (error) {
+    console.warn(`참여 여부 확인 실패 (postId: ${postId}):`, error);
+    return false;
+  }
+}
+
+/**
+ * 게시글 카드의 참여 상태 UI 업데이트
+ */
+function updatePostCardParticipationStatus(postId, isParticipant) {
+  const joinBtn = document.querySelector(
+    `.join-post-btn[data-post-id="${postId}"]`
+  );
+  const joinedContainer = document.querySelector(
+    `.joined-status-container[data-post-id="${postId}"]`
+  );
+  const cancelBtn = joinedContainer?.querySelector(
+    `.cancel-join-post-btn[data-post-id="${postId}"]`
+  );
+
+  if (isParticipant) {
+    if (joinBtn) joinBtn.classList.add("d-none");
+    if (joinedContainer) {
+      joinedContainer.classList.remove("d-none");
+      if (cancelBtn && currentUser) {
+        cancelBtn.setAttribute("data-user-id", currentUser.id);
+      }
+    }
+  } else {
+    if (joinBtn) joinBtn.classList.remove("d-none");
+    if (joinedContainer) joinedContainer.classList.add("d-none");
+  }
 }
 
 /**
@@ -226,6 +310,15 @@ async function loadPosts() {
     ensureHandlebarsHelpers();
     const template = Handlebars.compile(templateElement.innerHTML);
     gridElement.innerHTML = template({ posts });
+
+    // 각 게시글에 대해 참여 여부 확인 및 UI 업데이트
+    if (currentUser && currentUser.id) {
+      const openPosts = posts.filter((post) => post.status === "open");
+      for (const post of openPosts) {
+        const isParticipant = await checkParticipationStatus(post.id);
+        updatePostCardParticipationStatus(post.id, isParticipant);
+      }
+    }
   } catch (error) {
     console.error("Error loading posts:", error);
     showToast("상품 목록을 불러오는 중 오류가 발생했습니다.", "error");
@@ -678,6 +771,28 @@ document.addEventListener("click", async (e) => {
         return new Date(dateString).toLocaleString("ko-KR");
       };
 
+      // 참여 여부 확인
+      let isParticipant = false;
+      if (currentUser && currentUser.id && post.status === "open") {
+        isParticipant = await checkParticipationStatus(post.id);
+      }
+
+      // 채팅방 정보 가져오기 (참여한 경우에만)
+      let chatRoomId = null;
+      if (isParticipant && currentUser && currentUser.id) {
+        try {
+          const chatRoomResponse = await fetch(
+            `/api/chat/rooms/post/${post.id}`
+          );
+          if (chatRoomResponse.ok) {
+            const chatRoom = await chatRoomResponse.json();
+            chatRoomId = chatRoom.id;
+          }
+        } catch (error) {
+          console.warn("채팅방 정보 조회 실패:", error);
+        }
+      }
+
       document.getElementById("post-detail-body").innerHTML = `
         ${imagesHTML}
         <p class="mb-3">${post.content}</p>
@@ -702,10 +817,56 @@ document.addEventListener("click", async (e) => {
         </div>
         ${
           post.status === "open"
-            ? `
-          <button class="btn btn-success w-100 join-post-btn-detail" data-post-id="${post.id}">
-            참여하기
-          </button>
+            ? isParticipant
+              ? `
+          <div class="border-top pt-3 mt-3">
+            <div class="joined-status-container" data-post-id="${post.id}">
+              <div class="d-flex align-items-center justify-content-center mb-3 p-2 rounded" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <span class="text-white fw-bold">✓ 참여중</span>
+              </div>
+              <div class="d-grid gap-2">
+                ${
+                  chatRoomId
+                    ? `
+                  <a href="/chat?postId=${post.id}&userId=${currentUser.id}&chatRoomId=${chatRoomId}" 
+                     class="btn btn-info w-100 text-white fw-bold" 
+                     style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+                    💬 채팅방 입장
+                  </a>
+                `
+                    : `
+                  <a href="/chat?postId=${post.id}&userId=${currentUser.id}" 
+                     class="btn btn-info w-100 text-white fw-bold" 
+                     style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+                    💬 채팅방 입장
+                  </a>
+                `
+                }
+                <button class="btn btn-outline-warning w-100 cancel-join-post-btn-detail" data-post-id="${
+                  post.id
+                }" data-user-id="${currentUser.id}">
+                  참여취소
+                </button>
+              </div>
+            </div>
+          </div>
+        `
+              : `
+          <div class="border-top pt-3 mt-3">
+            <button class="btn btn-success w-100 fw-bold join-post-btn-detail" data-post-id="${post.id}" style="font-size: 1.1rem; padding: 12px;">
+              참여하기
+            </button>
+            <div class="d-none joined-status-container" data-post-id="${post.id}">
+              <div class="d-flex align-items-center justify-content-center mb-3 p-2 rounded" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <span class="text-white fw-bold">✓ 참여중</span>
+              </div>
+              <div class="d-grid gap-2">
+                <button class="btn btn-warning w-100 cancel-join-post-btn-detail" data-post-id="${post.id}">
+                  참여취소
+                </button>
+              </div>
+            </div>
+          </div>
         `
             : ""
         }
@@ -724,10 +885,16 @@ document.addEventListener("click", async (e) => {
   /**
    * 공동구매 참여 처리
    */
-  async function handleJoinPost(postId) {
+  async function handleJoinPost(postId, joinBtnElement = null) {
     if (!currentUser || !currentUser.id) {
       showToast("로그인이 필요합니다.", "warning");
       return;
+    }
+
+    // 버튼 상태 업데이트 (참여중... 표시)
+    if (joinBtnElement) {
+      joinBtnElement.textContent = "참여중...";
+      joinBtnElement.disabled = true;
     }
 
     try {
@@ -804,20 +971,126 @@ document.addEventListener("click", async (e) => {
       }
 
       const data = await response.json();
-      showToast("공동구매에 참여했습니다!", "success");
+      showToast("공동구매에 참여했습니다! 채팅방으로 이동합니다...", "success");
+
+      // 채팅방 정보 가져오기
+      let chatRoomId = null;
+      try {
+        const chatRoomResponse = await fetch(`/api/chat/rooms/post/${postId}`);
+        if (chatRoomResponse.ok) {
+          const chatRoom = await chatRoomResponse.json();
+          chatRoomId = chatRoom.id;
+        }
+      } catch (error) {
+        console.warn("채팅방 정보 조회 실패:", error);
+      }
+
+      // UI 업데이트: 상세 모달이 열려있으면 버튼 상태 변경
+      const detailModal = bootstrap.Modal.getInstance(
+        document.getElementById("postDetailModal")
+      );
+      if (detailModal && detailModal._isShown) {
+        const joinBtn = document.querySelector(
+          `.join-post-btn-detail[data-post-id="${postId}"]`
+        );
+        const joinedContainer = document.querySelector(
+          `.joined-status-container[data-post-id="${postId}"]`
+        );
+        const cancelBtn = joinedContainer?.querySelector(
+          `.cancel-join-post-btn-detail[data-post-id="${postId}"]`
+        );
+
+        if (joinBtn) joinBtn.classList.add("d-none");
+        if (joinedContainer) {
+          joinedContainer.classList.remove("d-none");
+          if (cancelBtn) {
+            cancelBtn.setAttribute("data-user-id", currentUser.id);
+          }
+
+          // 채팅방 입장 버튼 추가
+          const chatButtonHTML = chatRoomId
+            ? `<a href="/chat?postId=${postId}&userId=${currentUser.id}&chatRoomId=${chatRoomId}" 
+                   class="btn btn-info w-100 text-white fw-bold mb-2" 
+                   style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+                  💬 채팅방 입장
+                </a>`
+            : `<a href="/chat?postId=${postId}&userId=${currentUser.id}" 
+                   class="btn btn-info w-100 text-white fw-bold mb-2" 
+                   style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+                  💬 채팅방 입장
+                </a>`;
+
+          // 참여중 상태 표시 추가
+          const statusHTML = `<div class="d-flex align-items-center justify-content-center mb-3 p-2 rounded" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <span class="text-white fw-bold">✓ 참여중</span>
+          </div>`;
+
+          // 기존 내용을 유지하면서 채팅방 버튼과 상태 표시 추가
+          if (!joinedContainer.querySelector(".text-white.fw-bold")) {
+            joinedContainer.insertAdjacentHTML("afterbegin", statusHTML);
+          }
+          if (!joinedContainer.querySelector('a[href*="/chat"]')) {
+            const cancelBtnParent = cancelBtn?.parentElement;
+            if (cancelBtnParent) {
+              cancelBtnParent.insertAdjacentHTML("beforebegin", chatButtonHTML);
+            }
+          }
+        }
+      }
+
+      // UI 업데이트: 카드 뷰에서도 버튼 상태 변경
+      const cardJoinBtn = document.querySelector(
+        `.join-post-btn[data-post-id="${postId}"]`
+      );
+      const cardJoinedContainer = document.querySelector(
+        `.joined-status-container[data-post-id="${postId}"]`
+      );
+      const cardCancelBtn = cardJoinedContainer?.querySelector(
+        `.cancel-join-post-btn[data-post-id="${postId}"]`
+      );
+
+      if (cardJoinBtn) cardJoinBtn.classList.add("d-none");
+      if (cardJoinedContainer) {
+        cardJoinedContainer.classList.remove("d-none");
+        if (cardCancelBtn) {
+          cardCancelBtn.setAttribute("data-user-id", currentUser.id);
+        }
+      }
 
       // 게시글 목록 새로고침
       loadPosts();
 
       // 상세 모달이 열려있으면 닫기
-      const detailModal = bootstrap.Modal.getInstance(
-        document.getElementById("postDetailModal")
-      );
       if (detailModal) {
         detailModal.hide();
       }
+
+      // 채팅방 조회/생성 후 채팅 페이지로 이동
+      try {
+        const chatRoomResponse = await fetch(`/api/chat/rooms/post/${postId}`);
+
+        if (chatRoomResponse.ok) {
+          const chatRoom = await chatRoomResponse.json();
+          // 채팅 페이지로 이동 (Post ID와 User ID를 쿼리 파라미터로 전달)
+          window.location.href = `/chat?postId=${postId}&userId=${currentUser.id}&chatRoomId=${chatRoom.id}`;
+        } else {
+          // 채팅방 생성 실패 시에도 채팅 페이지로 이동 (수동 입력 가능)
+          window.location.href = `/chat?postId=${postId}&userId=${currentUser.id}`;
+        }
+      } catch (error) {
+        console.error("채팅방 조회 실패:", error);
+        // 에러가 발생해도 채팅 페이지로 이동
+        window.location.href = `/chat?postId=${postId}&userId=${currentUser.id}`;
+      }
     } catch (error) {
       console.error("Error joining post:", error);
+
+      // 에러 발생 시 버튼 상태 복원
+      if (joinBtnElement) {
+        joinBtnElement.textContent = "참여하기";
+        joinBtnElement.disabled = false;
+      }
+
       if (error.message.includes("ALREADY_PARTICIPATED")) {
         showToast("이미 참여한 공동구매입니다.", "warning");
       } else if (error.message.includes("AUTHOR_CANNOT_JOIN")) {
@@ -838,6 +1111,94 @@ document.addEventListener("click", async (e) => {
     }
   }
 
+  /**
+   * 공동구매 참여 취소 처리
+   */
+  async function handleLeavePost(
+    postId,
+    userId,
+    cancelBtnElement = null,
+    isDetailModal = false
+  ) {
+    if (!currentUser || !currentUser.id) {
+      showToast("로그인이 필요합니다.", "warning");
+      return;
+    }
+
+    // 버튼 상태 업데이트 (취소중... 표시)
+    if (cancelBtnElement) {
+      cancelBtnElement.textContent = "취소중...";
+      cancelBtnElement.disabled = true;
+    }
+
+    try {
+      const leaveUrl = `${API_BASE_POSTS}/${postId}/participate/${userId}`;
+      console.log("참여 취소 URL:", leaveUrl);
+
+      const response = await fetch(leaveUrl, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        const contentType = response.headers.get("content-type");
+
+        if (contentType && contentType.includes("application/json")) {
+          try {
+            const error = await response.json();
+            errorMessage = error.error || errorMessage;
+          } catch (e) {
+            console.error("Error parsing error response:", e);
+          }
+        }
+
+        throw new Error(errorMessage);
+      }
+
+      showToast("공동구매 참여를 취소했습니다.", "success");
+
+      // UI 업데이트: 상세 모달이 열려있으면 버튼 상태 변경
+      const detailModal = bootstrap.Modal.getInstance(
+        document.getElementById("postDetailModal")
+      );
+      if (isDetailModal && detailModal && detailModal._isShown) {
+        const joinBtn = document.querySelector(
+          `.join-post-btn-detail[data-post-id="${postId}"]`
+        );
+        const joinedContainer = document.querySelector(
+          `.joined-status-container[data-post-id="${postId}"]`
+        );
+
+        if (joinBtn) joinBtn.classList.remove("d-none");
+        if (joinedContainer) joinedContainer.classList.add("d-none");
+      }
+
+      // UI 업데이트: 카드 뷰에서도 버튼 상태 변경
+      const cardJoinBtn = document.querySelector(
+        `.join-post-btn[data-post-id="${postId}"]`
+      );
+      const cardJoinedContainer = document.querySelector(
+        `.joined-status-container[data-post-id="${postId}"]`
+      );
+
+      if (cardJoinBtn) cardJoinBtn.classList.remove("d-none");
+      if (cardJoinedContainer) cardJoinedContainer.classList.add("d-none");
+
+      // 게시글 목록 새로고침
+      loadPosts();
+    } catch (error) {
+      console.error("Error leaving post:", error);
+
+      // 에러 발생 시 버튼 상태 복원
+      if (cancelBtnElement) {
+        cancelBtnElement.textContent = "취소하기";
+        cancelBtnElement.disabled = false;
+      }
+
+      showToast(`참여 취소 중 오류가 발생했습니다: ${error.message}`, "error");
+    }
+  }
+
   // 참여하기 버튼 (카드에서)
   if (e.target.classList.contains("join-post-btn")) {
     if (!currentUser) {
@@ -850,7 +1211,7 @@ document.addEventListener("click", async (e) => {
     }
 
     const postId = e.target.getAttribute("data-post-id");
-    handleJoinPost(postId);
+    handleJoinPost(postId, e.target);
   }
 
   // 참여하기 버튼 (상세 모달에서)
@@ -865,7 +1226,31 @@ document.addEventListener("click", async (e) => {
     }
 
     const postId = e.target.getAttribute("data-post-id");
-    handleJoinPost(postId);
+    handleJoinPost(postId, e.target);
+  }
+
+  // 취소하기 버튼 (카드에서)
+  if (e.target.classList.contains("cancel-join-post-btn")) {
+    if (!currentUser) {
+      showToast("로그인이 필요합니다.", "warning");
+      return;
+    }
+
+    const postId = e.target.getAttribute("data-post-id");
+    const userId = e.target.getAttribute("data-user-id") || currentUser.id;
+    handleLeavePost(postId, userId, e.target, false);
+  }
+
+  // 취소하기 버튼 (상세 모달에서)
+  if (e.target.classList.contains("cancel-join-post-btn-detail")) {
+    if (!currentUser) {
+      showToast("로그인이 필요합니다.", "warning");
+      return;
+    }
+
+    const postId = e.target.getAttribute("data-post-id");
+    const userId = e.target.getAttribute("data-user-id") || currentUser.id;
+    handleLeavePost(postId, userId, e.target, true);
   }
 });
 
