@@ -24,7 +24,10 @@ const options: swaggerJsdoc.Options = {
     servers: [
       {
         url: getServerUrl(),
-        description: ENV.NodeEnv === "production" ? "Production server" : "Development server",
+        description:
+          ENV.NodeEnv === "production"
+            ? "Production server"
+            : "Development server",
       },
     ],
     components: {
@@ -82,28 +85,71 @@ const options: swaggerJsdoc.Options = {
         },
         Post: {
           type: "object",
-          required: ["title", "price", "deadline", "authorId"],
+          required: [
+            "id",
+            "authorId",
+            "title",
+            "content",
+            "price",
+            "minParticipants",
+            "deadline",
+          ],
           properties: {
             id: {
               type: "string",
+              format: "uuid",
               description: "게시글 UUID",
+              example: "123e4567-e89b-12d3-a456-426614174000",
+            },
+            authorId: {
+              type: "string",
+              format: "uuid",
+              description: "작성자 UUID",
+              example: "a87522bd-bc79-47b0-a73f-46ea4068a158",
             },
             title: {
               type: "string",
               description: "상품명",
+              example: "맛있는 치킨 공동구매",
+            },
+            content: {
+              type: "string",
+              description: "상품 설명",
+              example:
+                "BBQ 황금올리브치킨 2마리 세트를 함께 주문하실 분 구합니다!",
             },
             price: {
               type: "number",
               description: "가격",
+              example: 25000,
+            },
+            minParticipants: {
+              type: "integer",
+              description: "최소 참여 인원",
+              example: 2,
+            },
+            currentQuantity: {
+              type: "integer",
+              description: "현재 참여 인원",
+              example: 0,
+            },
+            status: {
+              type: "string",
+              enum: ["open", "closed", "cancelled"],
+              description: "상품 상태",
+              example: "open",
             },
             deadline: {
               type: "string",
               format: "date-time",
               description: "마감 시간",
+              example: "2025-11-27T23:59:59.000Z",
             },
-            authorId: {
+            pickupLocation: {
               type: "string",
-              description: "작성자 UUID",
+              nullable: true,
+              description: "픽업 장소",
+              example: "명지대학교 정문",
             },
             images: {
               type: "array",
@@ -111,14 +157,18 @@ const options: swaggerJsdoc.Options = {
                 type: "string",
                 description: "이미지 URL",
               },
+              description: "이미지 URL 배열",
+              example: ["https://example.com/image.jpg"],
             },
             createdAt: {
               type: "string",
               format: "date-time",
+              description: "생성일시",
             },
             updatedAt: {
               type: "string",
               format: "date-time",
+              description: "수정일시",
             },
           },
         },
@@ -148,7 +198,7 @@ const swaggerSpec = swaggerJsdoc(options);
  * - 환경 변수 API_BASE_URL이 설정되어 있으면 해당 URL 사용
  * - 없으면 요청의 현재 서버 URL을 자동으로 사용 (동적)
  * - 배포 환경에서는 API_BASE_URL=https://your-domain.com 으로 설정
- * 
+ *
  * 사용법:
  *   - 개발: http://localhost:3000/api-docs
  *   - 배포: https://your-domain.com/api-docs
@@ -159,7 +209,7 @@ export const setupSwagger = (app: Express) => {
   // 각 요청마다 현재 서버의 URL을 동적으로 설정
   app.get("/api-docs.json", (req: Request, res: Response) => {
     const currentServerUrl = `${req.protocol}://${req.get("host")}`;
-    
+
     const dynamicSpec = {
       ...swaggerSpec,
       servers: [
@@ -196,7 +246,8 @@ export const setupSwagger = (app: Express) => {
               url: `${req.protocol}://${req.get("host")}`,
               description: "Current server (자동 감지)",
             },
-            ...(ENV.ApiBaseUrl && ENV.ApiBaseUrl !== `${req.protocol}://${req.get("host")}`
+            ...(ENV.ApiBaseUrl &&
+            ENV.ApiBaseUrl !== `${req.protocol}://${req.get("host")}`
               ? [
                   {
                     url: ENV.ApiBaseUrl,
@@ -212,11 +263,11 @@ export const setupSwagger = (app: Express) => {
             url: "/api-docs.json", // 동적 JSON 참조
           },
           customCss: ".swagger-ui .topbar { display: none }",
-        },
+        }
       );
 
       res.send(swaggerHtml);
-    },
+    }
   );
 };
 
