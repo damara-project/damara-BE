@@ -5,6 +5,7 @@ import { Server as SocketServer, Socket } from "socket.io";
 import logger from "jet-logger";
 import { ChatService } from "../services/ChatService";
 import { MessageCreationAttributes } from "../models/Message";
+import { MessageRepo } from "../repos/MessageRepo";
 
 /**
  * Socket.io 서버 설정
@@ -108,13 +109,27 @@ export function setupSocketIO(httpServer: HttpServer): SocketServer {
 
         const savedMessage = await ChatService.sendMessage(messageData);
 
-        // 발신자 정보를 포함하여 메시지 조회
-        // sendMessage는 메시지만 반환하므로, 발신자 정보를 포함한 전체 메시지를 다시 조회
-        const messages = await ChatService.getMessagesByChatRoomId(chatRoomId, 1, 0);
-        const fullMessage = messages[messages.length - 1]; // 가장 최근 메시지
+        // 발신자 정보를 포함하여 메시지 조회 (저장된 메시지의 ID로 직접 조회)
+        const fullMessage = await MessageRepo.findById(savedMessage.id);
 
-        // 해당 채팅방의 모든 사용자에게 메시지 브로드캐스트
-        io.to(chatRoomId).emit("receive_message", fullMessage);
+        if (!fullMessage) {
+          logger.err(`✗ 메시지 조회 실패: 저장된 메시지를 찾을 수 없습니다.`);
+          socket.emit("error", {
+            message: "메시지 전송 후 조회에 실패했습니다.",
+          });
+          return;
+        }
+
+        // chatRoomId가 명시적으로 포함되도록 보장
+        const messageToBroadcast = {
+          ...fullMessage,
+          chatRoomId: chatRoomId, // 명시적으로 chatRoomId 포함
+        };
+
+        // 해당 채팅방의 모든 사용자에게 메시지 브로드캐스트 (발신자 포함)
+        io.to(chatRoomId).emit("receive_message", messageToBroadcast);
+        
+        logger.info(`✓ 메시지 브로드캐스트 완료: ${chatRoomId} - ${senderId} - ${fullMessage.id}`);
 
         logger.info(`✓ 메시지 전송 성공: ${chatRoomId} - ${senderId}`);
       } catch (error) {

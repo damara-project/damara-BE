@@ -144,6 +144,7 @@ function saveUserToStorage(user) {
   currentUser = user;
   localStorage.setItem("currentUser", JSON.stringify(user));
   updateUIForLoggedInUser();
+  loadPosts();
 }
 
 /**
@@ -284,6 +285,33 @@ function updatePostCardParticipationStatus(postId, isParticipant) {
   } else {
     if (joinBtn) joinBtn.classList.remove("d-none");
     if (joinedContainer) joinedContainer.classList.add("d-none");
+  }
+}
+
+/**
+ * 게시글 카드의 작성자 전용 UI 업데이트
+ */
+function updatePostCardForAuthor(postId, isAuthor) {
+  const joinBtn = document.querySelector(
+    `.join-post-btn[data-post-id="${postId}"]`
+  );
+  const cancelBtn = document.querySelector(
+    `.cancel-join-post-btn[data-post-id="${postId}"]`
+  );
+  const joinedBtn = document.querySelector(
+    `.joined-post-btn[data-post-id="${postId}"]`
+  );
+  const manageBtn = document.querySelector(
+    `.manage-post-btn[data-post-id="${postId}"]`
+  );
+
+  if (isAuthor) {
+    if (joinBtn) joinBtn.classList.add("d-none");
+    if (cancelBtn) cancelBtn.classList.add("d-none");
+    if (joinedBtn) joinedBtn.classList.add("d-none");
+    if (manageBtn) manageBtn.classList.remove("d-none");
+  } else if (manageBtn) {
+    manageBtn.classList.add("d-none");
   }
 }
 

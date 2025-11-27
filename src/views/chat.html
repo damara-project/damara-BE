@@ -244,6 +244,8 @@
       let socket = null;
       let currentChatRoomId = null;
       let currentUserId = null;
+      let displayedMessageIds = new Set(); // 표시된 메시지 ID 추적
+      let isLoadingHistory = false; // 메시지 히스토리 로딩 중 플래그
 
       // DOM 요소
       const chatRoomIdInput = document.getElementById("chat-room-id");
@@ -258,67 +260,6 @@
       const connectionText = document.getElementById("connection-text");
       const chatRoomTitle = document.getElementById("chat-room-title");
       const chatRoomIdDisplay = document.getElementById("chat-room-id-display");
-
-      // Socket.io 연결
-      function connectSocket() {
-        socket = io("http://localhost:3000", {
-          transports: ["websocket", "polling"],
-        });
-
-        socket.on("connect", () => {
-          console.log("✓ 서버에 연결되었습니다:", socket.id);
-          updateConnectionStatus(true);
-
-          // 자동 입장이 설정되어 있으면 입장
-          if (shouldAutoJoin && autoJoinChatRoomId && autoJoinUserId) {
-            joinChatRoom(autoJoinChatRoomId, autoJoinUserId);
-          }
-        });
-
-        socket.on("disconnect", () => {
-          console.log("✗ 서버 연결이 끊어졌습니다");
-          updateConnectionStatus(false);
-        });
-
-        socket.on("connect_error", (error) => {
-          console.error("✗ 연결 오류:", error);
-          updateConnectionStatus(false);
-          showSystemMessage(
-            "서버 연결에 실패했습니다. 서버가 실행 중인지 확인하세요."
-          );
-        });
-
-        // 메시지 수신
-        socket.on("receive_message", (message) => {
-          console.log("메시지 수신:", message);
-          displayMessage(message);
-        });
-
-        // 사용자 입장 알림
-        socket.on("user_joined", (data) => {
-          console.log("사용자 입장:", data);
-          showSystemMessage(`사용자가 채팅방에 입장했습니다.`);
-        });
-
-        // 사용자 퇴장 알림
-        socket.on("user_left", (data) => {
-          console.log("사용자 퇴장:", data);
-          showSystemMessage(`사용자가 채팅방을 나갔습니다.`);
-        });
-
-        // 메시지 읽음 처리 알림
-        socket.on("message_read", (data) => {
-          console.log("메시지 읽음:", data);
-        });
-
-        // 에러 처리
-        socket.on("error", (error) => {
-          console.error("에러:", error);
-          showSystemMessage(
-            `오류: ${error.message || "알 수 없는 오류가 발생했습니다."}`
-          );
-        });
-      }
 
       // 연결 상태 업데이트
       function updateConnectionStatus(connected) {
@@ -345,6 +286,14 @@
           return;
         }
 
+        // 기존 채팅방이 있으면 나가기
+        if (currentChatRoomId && currentChatRoomId !== chatRoomId) {
+          socket.emit("leave_chat_room", {
+            chatRoomId: currentChatRoomId,
+            userId: currentUserId,
+          });
+        }
+
         // 채팅방 입장
         socket.emit("join_chat_room", {
           chatRoomId: chatRoomId,
@@ -353,6 +302,9 @@
 
         currentChatRoomId = chatRoomId;
         currentUserId = userId;
+
+        // 표시된 메시지 ID 초기화
+        displayedMessageIds.clear();
 
         // UI 업데이트
         chatContainer.style.display = "flex";
@@ -394,8 +346,11 @@
         userIdInput.disabled = false;
         joinRoomBtn.disabled = false;
 
+        // 상태 초기화
         currentChatRoomId = null;
         currentUserId = null;
+        displayedMessageIds.clear();
+        isLoadingHistory = false;
       });
 
       // 메시지 전송
@@ -405,14 +360,35 @@
           return;
         }
 
+        // 입력 필드 비우기 (전송 전에 비워서 사용자 경험 개선)
+        messageInput.value = "";
+
+        // Optimistic update: 즉시 임시 메시지 표시
+        const tempMessageId = `temp-${Date.now()}-${Math.random()}`;
+        const tempMessage = {
+          id: tempMessageId,
+          chatRoomId: currentChatRoomId,
+          senderId: currentUserId,
+          content: content,
+          messageType: "text",
+          sender: {
+            id: currentUserId,
+            nickname: "나", // 임시로 "나"로 표시, 서버 응답 시 실제 닉네임으로 교체됨
+          },
+          createdAt: new Date().toISOString(),
+          isTemp: true, // 임시 메시지 플래그
+        };
+
+        // 임시 메시지 표시 (중복 체크 스킵)
+        displayMessage(tempMessage, true);
+
+        // 서버로 메시지 전송
         socket.emit("send_message", {
           chatRoomId: currentChatRoomId,
           senderId: currentUserId,
           content: content,
           messageType: "text",
         });
-
-        messageInput.value = "";
       }
 
       sendMessageBtn.addEventListener("click", sendMessage);
@@ -423,11 +399,41 @@
       });
 
       // 메시지 표시
-      function displayMessage(message) {
+      function displayMessage(message, skipDuplicateCheck = false) {
+        // 중복 메시지 체크 (히스토리 로딩 중이 아닐 때만)
+        if (!skipDuplicateCheck && message.id && displayedMessageIds.has(message.id)) {
+          console.log("중복 메시지 무시:", message.id);
+          return;
+        }
+
+        // 임시 메시지인 경우, 실제 메시지로 교체
+        if (message.isTemp && message.id && message.id.startsWith("temp-")) {
+          // 임시 메시지 찾기 (내용과 발신자로 매칭)
+          const tempMessageDiv = chatMessages.querySelector(
+            `[data-message-id="${message.id}"]`
+          );
+          if (tempMessageDiv) {
+            // 임시 메시지 제거
+            tempMessageDiv.remove();
+            // 임시 메시지 ID 제거
+            displayedMessageIds.delete(message.id);
+          }
+        }
+
+        // 메시지 ID 저장
+        if (message.id) {
+          displayedMessageIds.add(message.id);
+        }
+
         const messageDiv = document.createElement("div");
         messageDiv.className = `message-item ${
           message.senderId === currentUserId ? "own-message" : "other-message"
         }`;
+        
+        // 메시지 ID를 data 속성으로 저장 (나중에 참조 가능)
+        if (message.id) {
+          messageDiv.setAttribute("data-message-id", message.id);
+        }
 
         const senderName = message.sender?.nickname || "알 수 없음";
         const messageTime = new Date(message.createdAt).toLocaleTimeString(
@@ -459,6 +465,12 @@
 
       // 메시지 히스토리 로드
       async function loadMessageHistory(chatRoomId) {
+        if (isLoadingHistory) {
+          console.log("이미 메시지 히스토리를 로딩 중입니다.");
+          return;
+        }
+
+        isLoadingHistory = true;
         try {
           const response = await fetch(
             `http://localhost:3000/api/chat/rooms/${chatRoomId}/messages?limit=50&offset=0`
@@ -466,12 +478,17 @@
           if (response.ok) {
             const messages = await response.json();
             chatMessages.innerHTML = "";
+            displayedMessageIds.clear(); // 히스토리 로드 시 ID 세트 초기화
+            
+            // 메시지를 시간순으로 정렬하여 표시
             messages.forEach((message) => {
-              displayMessage(message);
+              displayMessage(message, true); // 히스토리 로딩 중이므로 중복 체크 스킵
             });
           }
         } catch (error) {
           console.error("메시지 히스토리 로드 실패:", error);
+        } finally {
+          isLoadingHistory = false;
         }
       }
 
@@ -525,6 +542,12 @@
 
       // Socket.io 연결
       function connectSocket() {
+        // 기존 소켓이 있으면 연결 해제
+        if (socket) {
+          socket.removeAllListeners();
+          socket.disconnect();
+        }
+
         socket = io("http://localhost:3000", {
           transports: ["websocket", "polling"],
         });
@@ -552,22 +575,48 @@
           );
         });
 
-        // 메시지 수신
+        // 메시지 수신 (중복 방지 로직 포함)
         socket.on("receive_message", (message) => {
           console.log("메시지 수신:", message);
-          displayMessage(message);
+          // 현재 채팅방의 메시지만 표시
+          if (message.chatRoomId === currentChatRoomId) {
+            // 내가 보낸 메시지인 경우, 임시 메시지를 실제 메시지로 교체
+            if (message.senderId === currentUserId) {
+              // 임시 메시지 찾아서 제거
+              const tempMessages = chatMessages.querySelectorAll(
+                '[data-message-id^="temp-"]'
+              );
+              tempMessages.forEach((tempMsg) => {
+                const tempContent = tempMsg.querySelector(".message-content")?.textContent;
+                if (tempContent === message.content) {
+                  tempMsg.remove();
+                  const tempId = tempMsg.getAttribute("data-message-id");
+                  if (tempId) {
+                    displayedMessageIds.delete(tempId);
+                  }
+                }
+              });
+            }
+            displayMessage(message, false); // 중복 체크 수행
+          }
         });
 
         // 사용자 입장 알림
         socket.on("user_joined", (data) => {
           console.log("사용자 입장:", data);
-          showSystemMessage(`사용자가 채팅방에 입장했습니다.`);
+          // 현재 채팅방의 알림만 표시
+          if (data.chatRoomId === currentChatRoomId) {
+            showSystemMessage(`사용자가 채팅방에 입장했습니다.`);
+          }
         });
 
         // 사용자 퇴장 알림
         socket.on("user_left", (data) => {
           console.log("사용자 퇴장:", data);
-          showSystemMessage(`사용자가 채팅방을 나갔습니다.`);
+          // 현재 채팅방의 알림만 표시
+          if (data.chatRoomId === currentChatRoomId) {
+            showSystemMessage(`사용자가 채팅방을 나갔습니다.`);
+          }
         });
 
         // 메시지 읽음 처리 알림
