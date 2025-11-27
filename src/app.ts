@@ -76,6 +76,10 @@ app.get("/posts", (_: Request, res: Response) => {
   return res.sendFile("posts.html", { root: viewsDir });
 });
 
+app.get("/chat", (_: Request, res: Response) => {
+  return res.sendFile("chat.html", { root: viewsDir });
+});
+
 app.get("/", (_: Request, res: Response) => {
   return res.sendFile("index.html", { root: viewsDir });
 });

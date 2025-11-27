@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>실시간 채팅</title>
+    <link rel="stylesheet" type="text/css" href="/stylesheets/main.css" />
+
+    <!-- Socket.io -->
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+
+    <!-- Bootstrap -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+      crossorigin="anonymous"
+    />
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+      crossorigin="anonymous"
+    ></script>
+
+    <style>
+      .chat-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        height: calc(100vh - 200px);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .chat-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1rem;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        background: white;
+        padding: 1rem;
+        border-left: 1px solid #dee2e6;
+        border-right: 1px solid #dee2e6;
+      }
+
+      .message-item {
+        margin-bottom: 1rem;
+        padding: 0.75rem;
+        border-radius: 10px;
+        animation: fadeIn 0.3s ease-in;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .message-item.own-message {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        margin-left: auto;
+        max-width: 70%;
+        text-align: right;
+      }
+
+      .message-item.other-message {
+        background: #f8f9fa;
+        color: #212529;
+        margin-right: auto;
+        max-width: 70%;
+      }
+
+      .message-sender {
+        font-weight: bold;
+        font-size: 0.9rem;
+        margin-bottom: 0.25rem;
+      }
+
+      .message-content {
+        word-wrap: break-word;
+      }
+
+      .message-time {
+        font-size: 0.75rem;
+        opacity: 0.7;
+        margin-top: 0.25rem;
+      }
+
+      .chat-input-area {
+        background: white;
+        padding: 1rem;
+        border: 1px solid #dee2e6;
+        border-radius: 0 0 10px 10px;
+      }
+
+      .connection-status {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        margin-right: 0.5rem;
+      }
+
+      .connection-status.connected {
+        background-color: #28a745;
+      }
+
+      .connection-status.disconnected {
+        background-color: #dc3545;
+      }
+
+      .system-message {
+        text-align: center;
+        color: #6c757d;
+        font-style: italic;
+        padding: 0.5rem;
+        font-size: 0.9rem;
+      }
+
+      .chat-room-selector {
+        background: white;
+        padding: 1rem;
+        border-radius: 10px;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- 헤더 -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm mb-4">
+      <div class="container">
+        <a class="navbar-brand fw-bold" href="/">
+          <span style="font-size: 1.8rem">💬</span> 실시간 채팅
+        </a>
+        <div class="navbar-nav ms-auto">
+          <a class="btn btn-outline-secondary btn-sm me-2" href="/">
+            홈으로
+          </a>
+          <span class="align-middle me-2">
+            <span class="connection-status disconnected" id="connection-status"></span>
+            <span id="connection-text">연결 중...</span>
+          </span>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container">
+      <!-- 채팅방 선택 영역 -->
+      <div class="chat-room-selector">
+        <h5 class="mb-3">채팅방 설정</h5>
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label for="chat-room-id" class="form-label">채팅방 ID</label>
+            <input
+              type="text"
+              class="form-control"
+              id="chat-room-id"
+              placeholder="채팅방 UUID 입력"
+            />
+          </div>
+          <div class="col-md-4">
+            <label for="user-id" class="form-label">사용자 ID</label>
+            <input
+              type="text"
+              class="form-control"
+              id="user-id"
+              placeholder="사용자 UUID 입력"
+            />
+          </div>
+          <div class="col-md-4 d-flex align-items-end">
+            <button class="btn btn-primary w-100" id="join-room-btn">
+              채팅방 입장
+            </button>
+          </div>
+        </div>
+        <div class="mt-3">
+          <small class="text-muted">
+            💡 팁: 먼저 Post를 생성한 후, 해당 Post의 ID로 채팅방을 생성하세요.
+            <br />
+            API: POST /api/chat/rooms (body: { chatRoom: { postId } })
+          </small>
+        </div>
+      </div>
+
+      <!-- 채팅 컨테이너 -->
+      <div class="chat-container shadow-lg" id="chat-container" style="display: none">
+        <div class="chat-header">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h5 class="mb-0" id="chat-room-title">채팅방</h5>
+              <small id="chat-room-id-display"></small>
+            </div>
+            <button class="btn btn-light btn-sm" id="leave-room-btn">
+              나가기
+            </button>
+          </div>
+        </div>
+
+        <div class="chat-messages" id="chat-messages">
+          <!-- 메시지들이 여기에 표시됩니다 -->
+        </div>
+
+        <div class="chat-input-area">
+          <div class="input-group">
+            <input
+              type="text"
+              class="form-control"
+              id="message-input"
+              placeholder="메시지를 입력하세요..."
+              disabled
+            />
+            <button
+              class="btn btn-primary"
+              type="button"
+              id="send-message-btn"
+              disabled
+            >
+              전송
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // 전역 변수
+      let socket = null;
+      let currentChatRoomId = null;
+      let currentUserId = null;
+
+      // DOM 요소
+      const chatRoomIdInput = document.getElementById("chat-room-id");
+      const userIdInput = document.getElementById("user-id");
+      const joinRoomBtn = document.getElementById("join-room-btn");
+      const leaveRoomBtn = document.getElementById("leave-room-btn");
+      const chatContainer = document.getElementById("chat-container");
+      const chatMessages = document.getElementById("chat-messages");
+      const messageInput = document.getElementById("message-input");
+      const sendMessageBtn = document.getElementById("send-message-btn");
+      const connectionStatus = document.getElementById("connection-status");
+      const connectionText = document.getElementById("connection-text");
+      const chatRoomTitle = document.getElementById("chat-room-title");
+      const chatRoomIdDisplay = document.getElementById("chat-room-id-display");
+
+      // Socket.io 연결
+      function connectSocket() {
+        socket = io("http://localhost:3000", {
+          transports: ["websocket", "polling"],
+        });
+
+        socket.on("connect", () => {
+          console.log("✓ 서버에 연결되었습니다:", socket.id);
+          updateConnectionStatus(true);
+        });
+
+        socket.on("disconnect", () => {
+          console.log("✗ 서버 연결이 끊어졌습니다");
+          updateConnectionStatus(false);
+        });
+
+        socket.on("connect_error", (error) => {
+          console.error("✗ 연결 오류:", error);
+          updateConnectionStatus(false);
+          showSystemMessage("서버 연결에 실패했습니다. 서버가 실행 중인지 확인하세요.");
+        });
+
+        // 메시지 수신
+        socket.on("receive_message", (message) => {
+          console.log("메시지 수신:", message);
+          displayMessage(message);
+        });
+
+        // 사용자 입장 알림
+        socket.on("user_joined", (data) => {
+          console.log("사용자 입장:", data);
+          showSystemMessage(`사용자가 채팅방에 입장했습니다.`);
+        });
+
+        // 사용자 퇴장 알림
+        socket.on("user_left", (data) => {
+          console.log("사용자 퇴장:", data);
+          showSystemMessage(`사용자가 채팅방을 나갔습니다.`);
+        });
+
+        // 메시지 읽음 처리 알림
+        socket.on("message_read", (data) => {
+          console.log("메시지 읽음:", data);
+        });
+
+        // 에러 처리
+        socket.on("error", (error) => {
+          console.error("에러:", error);
+          showSystemMessage(`오류: ${error.message || "알 수 없는 오류가 발생했습니다."}`);
+        });
+      }
+
+      // 연결 상태 업데이트
+      function updateConnectionStatus(connected) {
+        if (connected) {
+          connectionStatus.classList.remove("disconnected");
+          connectionStatus.classList.add("connected");
+          connectionText.textContent = "연결됨";
+        } else {
+          connectionStatus.classList.remove("connected");
+          connectionStatus.classList.add("disconnected");
+          connectionText.textContent = "연결 끊김";
+        }
+      }
+
+      // 채팅방 입장
+      joinRoomBtn.addEventListener("click", () => {
+        const chatRoomId = chatRoomIdInput.value.trim();
+        const userId = userIdInput.value.trim();
+
+        if (!chatRoomId || !userId) {
+          alert("채팅방 ID와 사용자 ID를 모두 입력해주세요.");
+          return;
+        }
+
+        if (!socket || !socket.connected) {
+          alert("서버에 연결되지 않았습니다. 잠시 후 다시 시도해주세요.");
+          return;
+        }
+
+        // 채팅방 입장
+        socket.emit("join_chat_room", {
+          chatRoomId: chatRoomId,
+          userId: userId,
+        });
+
+        currentChatRoomId = chatRoomId;
+        currentUserId = userId;
+
+        // UI 업데이트
+        chatContainer.style.display = "flex";
+        chatRoomTitle.textContent = "채팅방";
+        chatRoomIdDisplay.textContent = `ID: ${chatRoomId}`;
+        messageInput.disabled = false;
+        sendMessageBtn.disabled = false;
+        chatRoomIdInput.disabled = true;
+        userIdInput.disabled = true;
+        joinRoomBtn.disabled = true;
+
+        // 메시지 히스토리 로드
+        loadMessageHistory(chatRoomId);
+      });
+
+      // 채팅방 나가기
+      leaveRoomBtn.addEventListener("click", () => {
+        if (socket && currentChatRoomId && currentUserId) {
+          socket.emit("leave_chat_room", {
+            chatRoomId: currentChatRoomId,
+            userId: currentUserId,
+          });
+        }
+
+        // UI 초기화
+        chatContainer.style.display = "none";
+        chatMessages.innerHTML = "";
+        messageInput.value = "";
+        messageInput.disabled = true;
+        sendMessageBtn.disabled = true;
+        chatRoomIdInput.disabled = false;
+        userIdInput.disabled = false;
+        joinRoomBtn.disabled = false;
+
+        currentChatRoomId = null;
+        currentUserId = null;
+      });
+
+      // 메시지 전송
+      function sendMessage() {
+        const content = messageInput.value.trim();
+        if (!content || !socket || !currentChatRoomId || !currentUserId) {
+          return;
+        }
+
+        socket.emit("send_message", {
+          chatRoomId: currentChatRoomId,
+          senderId: currentUserId,
+          content: content,
+          messageType: "text",
+        });
+
+        messageInput.value = "";
+      }
+
+      sendMessageBtn.addEventListener("click", sendMessage);
+      messageInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
+          sendMessage();
+        }
+      });
+
+      // 메시지 표시
+      function displayMessage(message) {
+        const messageDiv = document.createElement("div");
+        messageDiv.className = `message-item ${
+          message.senderId === currentUserId ? "own-message" : "other-message"
+        }`;
+
+        const senderName = message.sender?.nickname || "알 수 없음";
+        const messageTime = new Date(message.createdAt).toLocaleTimeString("ko-KR", {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+
+        messageDiv.innerHTML = `
+          <div class="message-sender">${senderName}</div>
+          <div class="message-content">${escapeHtml(message.content)}</div>
+          <div class="message-time">${messageTime}</div>
+        `;
+
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      }
+
+      // 시스템 메시지 표시
+      function showSystemMessage(text) {
+        const systemDiv = document.createElement("div");
+        systemDiv.className = "system-message";
+        systemDiv.textContent = text;
+        chatMessages.appendChild(systemDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      }
+
+      // 메시지 히스토리 로드
+      async function loadMessageHistory(chatRoomId) {
+        try {
+          const response = await fetch(
+            `http://localhost:3000/api/chat/rooms/${chatRoomId}/messages?limit=50&offset=0`
+          );
+          if (response.ok) {
+            const messages = await response.json();
+            chatMessages.innerHTML = "";
+            messages.forEach((message) => {
+              displayMessage(message);
+            });
+          }
+        } catch (error) {
+          console.error("메시지 히스토리 로드 실패:", error);
+        }
+      }
+
+      // HTML 이스케이프
+      function escapeHtml(text) {
+        const div = document.createElement("div");
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      // 페이지 로드 시 Socket.io 연결
+      connectSocket();
+
+      // 페이지 종료 시 연결 해제
+      window.addEventListener("beforeunload", () => {
+        if (socket && currentChatRoomId && currentUserId) {
+          socket.emit("leave_chat_room", {
+            chatRoomId: currentChatRoomId,
+            userId: currentUserId,
+          });
+          socket.disconnect();
+        }
+      });
+    </script>
+  </body>
+</html>
+

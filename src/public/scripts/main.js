@@ -721,6 +721,123 @@ document.addEventListener("click", async (e) => {
     }
   }
 
+  /**
+   * 공동구매 참여 처리
+   */
+  async function handleJoinPost(postId) {
+    if (!currentUser || !currentUser.id) {
+      showToast("로그인이 필요합니다.", "warning");
+      return;
+    }
+
+    try {
+      // 먼저 이미 참여했는지 확인
+      const checkUrl = `${API_BASE_POSTS}/${postId}/participate/${currentUser.id}`;
+      console.log("참여 여부 확인 URL:", checkUrl);
+
+      const checkResponse = await fetch(checkUrl);
+
+      // 응답이 성공적이지 않으면 참여하지 않은 것으로 간주하고 계속 진행
+      let isAlreadyParticipant = false;
+      if (checkResponse.ok) {
+        try {
+          const checkData = await checkResponse.json();
+          isAlreadyParticipant = checkData.isParticipant || false;
+          console.log("참여 여부:", isAlreadyParticipant);
+        } catch (e) {
+          // JSON 파싱 실패 시 무시하고 계속 진행
+          console.warn("참여 여부 확인 실패, 계속 진행:", e);
+        }
+      } else {
+        console.warn(
+          `참여 여부 확인 실패 (${checkResponse.status}), 계속 진행`
+        );
+      }
+
+      if (isAlreadyParticipant) {
+        showToast("이미 참여한 공동구매입니다.", "info");
+        return;
+      }
+
+      // 참여하기
+      const participateUrl = `${API_BASE_POSTS}/${postId}/participate`;
+      console.log("참여하기 URL:", participateUrl);
+      console.log("요청 데이터:", { userId: currentUser.id });
+
+      const response = await fetch(participateUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId: currentUser.id,
+        }),
+      });
+
+      console.log("응답 상태:", response.status, response.statusText);
+
+      // 응답이 성공적이지 않으면 에러 처리
+      if (!response.ok) {
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        const contentType = response.headers.get("content-type");
+
+        // JSON 응답인 경우에만 파싱 시도
+        if (contentType && contentType.includes("application/json")) {
+          try {
+            const error = await response.json();
+            errorMessage = error.error || errorMessage;
+          } catch (e) {
+            // JSON 파싱 실패 시 기본 메시지 사용
+            console.error("Error parsing error response:", e);
+          }
+        } else {
+          // HTML 응답인 경우 (404 페이지 등)
+          const text = await response.text();
+          console.error(
+            "Server returned HTML instead of JSON:",
+            text.substring(0, 200)
+          );
+          errorMessage = `서버 오류 (${response.status}): API 엔드포인트를 찾을 수 없습니다.`;
+        }
+
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      showToast("공동구매에 참여했습니다!", "success");
+
+      // 게시글 목록 새로고침
+      loadPosts();
+
+      // 상세 모달이 열려있으면 닫기
+      const detailModal = bootstrap.Modal.getInstance(
+        document.getElementById("postDetailModal")
+      );
+      if (detailModal) {
+        detailModal.hide();
+      }
+    } catch (error) {
+      console.error("Error joining post:", error);
+      if (error.message.includes("ALREADY_PARTICIPATED")) {
+        showToast("이미 참여한 공동구매입니다.", "warning");
+      } else if (error.message.includes("AUTHOR_CANNOT_JOIN")) {
+        showToast("작성자는 참여할 수 없습니다.", "warning");
+      } else if (error.message.includes("POST_NOT_OPEN")) {
+        showToast("마감되었거나 취소된 공동구매입니다.", "warning");
+      } else if (
+        error.message.includes("404") ||
+        error.message.includes("찾을 수 없습니다")
+      ) {
+        showToast(
+          "API 엔드포인트를 찾을 수 없습니다. 서버를 확인해주세요.",
+          "error"
+        );
+      } else {
+        showToast(`참여 중 오류가 발생했습니다: ${error.message}`, "error");
+      }
+    }
+  }
+
   // 참여하기 버튼 (카드에서)
   if (e.target.classList.contains("join-post-btn")) {
     if (!currentUser) {
@@ -733,8 +850,7 @@ document.addEventListener("click", async (e) => {
     }
 
     const postId = e.target.getAttribute("data-post-id");
-    showToast("참여하기 기능은 추후 구현 예정입니다.", "info");
-    // TODO: 참여하기 기능 구현
+    handleJoinPost(postId);
   }
 
   // 참여하기 버튼 (상세 모달에서)
@@ -749,8 +865,7 @@ document.addEventListener("click", async (e) => {
     }
 
     const postId = e.target.getAttribute("data-post-id");
-    showToast("참여하기 기능은 추후 구현 예정입니다.", "info");
-    // TODO: 참여하기 기능 구현
+    handleJoinPost(postId);
   }
 });
 

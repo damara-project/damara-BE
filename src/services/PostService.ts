@@ -12,17 +12,11 @@ export const PostService = {
    * - 작성자가 존재하는지 확인
    * - 이미지 URL 배열을 PostRepo로 전달
    */
-  async createPost(
-    data: PostCreationAttributes,
-    imageUrls: string[] = [],
-  ) {
+  async createPost(data: PostCreationAttributes, imageUrls: string[] = []) {
     // 작성자 존재 확인
     const author = await UserModel.findByPk(data.authorId);
     if (!author) {
-      throw new RouteError(
-        HttpStatusCodes.NOT_FOUND,
-        "AUTHOR_NOT_FOUND",
-      );
+      throw new RouteError(HttpStatusCodes.NOT_FOUND, "AUTHOR_NOT_FOUND");
     }
 
     const post = await PostRepo.create(data, imageUrls);
@@ -79,5 +73,68 @@ export const PostService = {
    */
   async deletePost(id: string) {
     await PostRepo.delete(id);
+  },
+};
+
+// 참여 기능을 위한 별도 Service
+import { PostParticipantRepo } from "../repos/PostParticipantRepo";
+import PostModel from "../models/Post";
+
+export const PostParticipantService = {
+  /**
+   * 공동구매 참여
+   * - 참여 후 currentQuantity 업데이트
+   */
+  async joinPost(postId: string, userId: string) {
+    // 참여 처리
+    const participant = await PostParticipantRepo.create({
+      postId,
+      userId,
+    });
+
+    // currentQuantity 업데이트
+    const count = await PostParticipantRepo.countByPostId(postId);
+    await PostModel.update(
+      { currentQuantity: count },
+      { where: { id: postId } }
+    );
+
+    return participant;
+  },
+
+  /**
+   * 참여 취소
+   * - 취소 후 currentQuantity 업데이트
+   */
+  async leavePost(postId: string, userId: string) {
+    await PostParticipantRepo.delete(postId, userId);
+
+    // currentQuantity 업데이트
+    const count = await PostParticipantRepo.countByPostId(postId);
+    await PostModel.update(
+      { currentQuantity: count },
+      { where: { id: postId } }
+    );
+  },
+
+  /**
+   * 게시글의 참여자 목록 조회
+   */
+  async getParticipants(postId: string) {
+    return await PostParticipantRepo.findByPostId(postId);
+  },
+
+  /**
+   * 사용자가 참여한 게시글 목록 조회
+   */
+  async getParticipatedPosts(userId: string) {
+    return await PostParticipantRepo.findByUserId(userId);
+  },
+
+  /**
+   * 사용자가 특정 게시글에 참여했는지 확인
+   */
+  async isParticipant(postId: string, userId: string) {
+    return await PostParticipantRepo.isParticipant(postId, userId);
   },
 };

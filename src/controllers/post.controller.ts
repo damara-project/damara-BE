@@ -1,7 +1,7 @@
 // src/controllers/post.controller.ts
 
 import { Request, Response, NextFunction } from "express";
-import { PostService } from "../services/PostService";
+import { PostService, PostParticipantService } from "../services/PostService";
 import { PostCreationAttributes } from "../models/Post";
 import { parseReq } from "../routes/common/validation/parseReq";
 import HttpStatusCodes from "../common/constants/HttpStatusCodes";
@@ -174,6 +174,127 @@ export async function deletePost(
     await PostService.deletePost(id);
 
     res.status(HttpStatusCodes.NO_CONTENT).send();
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * 공동구매 참여
+ * POST /api/posts/:id/participate
+ * body: { userId }
+ */
+export async function joinPost(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { id } = req.params;
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(HttpStatusCodes.BAD_REQUEST).json({
+        error: "USER_ID_REQUIRED",
+      });
+    }
+
+    const participant = await PostParticipantService.joinPost(id, userId);
+    const post = await PostService.getPostById(id);
+
+    res.status(HttpStatusCodes.CREATED).json({
+      participant,
+      post: {
+        ...post,
+        currentQuantity: post.currentQuantity,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * 공동구매 참여 취소
+ * DELETE /api/posts/:id/participate/:userId
+ */
+export async function leavePost(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { id, userId } = req.params;
+
+    await PostParticipantService.leavePost(id, userId);
+    const post = await PostService.getPostById(id);
+
+    res.status(HttpStatusCodes.OK).json({
+      post: {
+        ...post,
+        currentQuantity: post.currentQuantity,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * 게시글의 참여자 목록 조회
+ * GET /api/posts/:id/participants
+ */
+export async function getParticipants(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { id } = req.params;
+    const participants = await PostParticipantService.getParticipants(id);
+
+    res.status(HttpStatusCodes.OK).json(participants);
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * 사용자가 참여한 게시글 목록 조회
+ * GET /api/posts/user/:userId/participated
+ */
+export async function getParticipatedPosts(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { userId } = req.params;
+    const posts = await PostParticipantService.getParticipatedPosts(userId);
+
+    res.status(HttpStatusCodes.OK).json(posts);
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * 사용자가 특정 게시글에 참여했는지 확인
+ * GET /api/posts/:id/participate/:userId
+ */
+export async function checkParticipation(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { id, userId } = req.params;
+    const isParticipant = await PostParticipantService.isParticipant(
+      id,
+      userId
+    );
+
+    res.status(HttpStatusCodes.OK).json({ isParticipant });
   } catch (error) {
     next(error);
   }
