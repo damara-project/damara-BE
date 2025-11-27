@@ -5,6 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>공동구매 상품</title>
+    <link rel="stylesheet" type="text/css" href="/stylesheets/main.css" />
     <link rel="stylesheet" type="text/css" href="/stylesheets/posts.css" />
 
     <!-- Handlebars -->
@@ -25,23 +26,62 @@
   </head>
 
   <!-- Body -->
-  <body>
-    <div class="container mt-4">
-      <h1 class="mb-3">내가 올린 상품 관리</h1>
-      <p class="text-muted">
-        홈 화면에서 상품을 등록한 뒤, 여기에서 내 학번으로 필터링하여 내가 올린
-        공동구매 글만 빠르게 찾아보세요.
-      </p>
+  <body class="app-body">
+    <nav class="navbar navbar-expand-lg app-nav shadow-sm sticky-top">
+      <div class="container">
+        <a class="navbar-brand" href="/">
+          <span>🍊</span>
+          다마라
+        </a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNav"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-2">
+            <li class="nav-item">
+              <a class="nav-link" href="/">홈</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link active" href="/posts">내 상품 관리</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/users">회원 목록</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/chat">실시간 채팅</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <main class="app-main container">
+      <div class="posts-hero">
+        <h1>내가 올린 상품 관리</h1>
+        <p>
+          홈에서 상품을 등록한 뒤, 학번으로 모아보고 관리할 수 있는 전용
+          대시보드예요.
+        </p>
+      </div>
 
       <!-- 작성자 학번 입력 -->
-      <div class="card mb-4 shadow-sm">
-        <div class="card-header bg-white">
-          <h3 class="mb-0">작성자 학번으로 조회</h3>
+      <section class="section-block">
+        <div class="section-header">
+          <p class="section-subtitle mb-1">STEP 1</p>
+          <h2 class="section-title">작성자 학번으로 조회</h2>
+          <p class="section-subtitle">
+            홈 화면 상단의 로그인 카드에서 내 학번을 확인할 수 있어요.
+          </p>
         </div>
-        <div class="card-body">
+        <div>
           <form id="student-search-form">
             <div class="row g-3 align-items-end">
-              <div class="col-md-8">
+              <div class="col-md-8 col-lg-9">
                 <label for="student-id-input" class="form-label">
                   작성자 학번
                 </label>
@@ -52,11 +92,8 @@
                   placeholder="예: 20231234"
                   required
                 />
-                <div class="form-text">
-                  홈 화면 상단의 로그인 카드에서 내 학번을 확인할 수 있어요.
-                </div>
               </div>
-              <div class="col-md-4 d-flex gap-2">
+              <div class="col-md-4 col-lg-3 d-flex gap-2">
                 <button type="submit" class="btn btn-primary flex-grow-1">
                   내 상품 불러오기
                 </button>
@@ -71,19 +108,20 @@
             </div>
           </form>
         </div>
-      </div>
+      </section>
 
       <!-- 내 상품 목록 -->
       <div id="user-posts-section" class="d-none">
-        <div class="card">
+        <section class="section-block">
           <div
-            class="card-header d-flex flex-wrap justify-content-between align-items-center"
+            class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2"
           >
             <div>
-              <h3 class="mb-1">내가 올린 상품</h3>
-              <small class="text-muted"
-                >작성자 학번: <span id="current-student-id"></span
-              ></small>
+              <p class="section-subtitle mb-1">STEP 2</p>
+              <h2 class="section-title">내가 올린 상품</h2>
+              <span class="chip"
+                >작성자 학번: <span id="current-student-id" class="ms-1"></span
+              ></span>
             </div>
             <div class="d-flex gap-2">
               <button
@@ -100,133 +138,125 @@
               </button>
             </div>
           </div>
-          <div class="card-body">
-            <div id="user-posts-anchor"></div>
-            <script id="user-posts-template" type="text/x-handlebars-template">
-              {{#each posts}}
-                <div class="post-item mb-4 p-3 border rounded">
-                  <div class="normal-view">
-                    <div class="row">
-                      {{#if images}}
-                        <div class="col-md-3 mb-3 mb-md-0">
-                          <img
-                            src="{{images.0.imageUrl}}"
-                            alt="{{title}}"
-                            class="img-fluid rounded"
-                            style="max-height: 200px; object-fit: cover;"
-                          />
+          <div id="user-posts-anchor"></div>
+          <script id="user-posts-template" type="text/x-handlebars-template">
+            {{#each posts}}
+              <div class="post-item">
+                <div class="normal-view">
+                  <div class="row">
+                    {{#if images}}
+                      <div class="col-md-3 mb-3 mb-md-0">
+                        <img
+                          src="{{images.0.imageUrl}}"
+                          alt="{{title}}"
+                          class="img-fluid rounded"
+                          style="max-height: 200px; object-fit: cover;"
+                        />
+                      </div>
+                    {{/if}}
+                    <div class="{{#if images}}col-md-9{{else}}col-12{{/if}}">
+                      <h4>{{title}}</h4>
+                      <p class="text-muted">{{content}}</p>
+                      <div class="row">
+                        <div class="col-md-6">
+                          <p><strong>가격:</strong> {{formatPrice price}}원</p>
+                          <p><strong>최소 인원:</strong> {{minParticipants}}명</p>
+                          <p><strong>현재 인원:</strong> {{currentQuantity}}명</p>
                         </div>
-                      {{/if}}
-                      <div class="{{#if images}}col-md-9{{else}}col-12{{/if}}">
-                        <h4>{{title}}</h4>
-                        <p class="text-muted">{{content}}</p>
-                        <div class="row">
-                          <div class="col-md-6">
-                            <p><strong>가격:</strong> {{formatPrice price}}원</p>
-                            <p><strong>최소 인원:</strong> {{minParticipants}}명</p>
-                            <p><strong>현재 인원:</strong> {{currentQuantity}}명</p>
-                          </div>
-                          <div class="col-md-6">
-                            <p><strong>상태:</strong>
-                              <span class="badge
-                                {{#eq status 'open'}}bg-success{{/eq}}
-                                {{#eq status 'closed'}}bg-secondary{{/eq}}
-                                {{#eq status 'cancelled'}}bg-danger{{/eq}}
-                              ">
-                                {{#eq status 'open'}}모집중{{/eq}}
-                                {{#eq status 'closed'}}마감{{/eq}}
-                                {{#eq status 'cancelled'}}취소됨{{/eq}}
-                              </span>
-                            </p>
-                            <p><strong>마감일:</strong> {{formatDate deadline}}</p>
-                            {{#if pickupLocation}}
-                              <p><strong>픽업 장소:</strong> {{pickupLocation}}</p>
-                            {{/if}}
-                            <p><strong>작성일:</strong> {{formatDate createdAt}}</p>
-                          </div>
+                        <div class="col-md-6">
+                          <p><strong>상태:</strong>
+                            <span class="badge
+                              {{#eq status 'open'}}bg-success{{/eq}}
+                              {{#eq status 'closed'}}bg-secondary{{/eq}}
+                              {{#eq status 'cancelled'}}bg-danger{{/eq}}
+                            ">
+                              {{#eq status 'open'}}모집중{{/eq}}
+                              {{#eq status 'closed'}}마감{{/eq}}
+                              {{#eq status 'cancelled'}}취소됨{{/eq}}
+                            </span>
+                          </p>
+                          <p><strong>마감일:</strong> {{formatDate deadline}}</p>
+                          {{#if pickupLocation}}
+                            <p><strong>픽업 장소:</strong> {{pickupLocation}}</p>
+                          {{/if}}
+                          <p><strong>작성일:</strong> {{formatDate createdAt}}</p>
                         </div>
-                        <div class="mt-2">
-                          <button
-                            type="button"
-                            class="btn btn-sm btn-primary edit-post-btn"
-                            data-post-id="{{id}}"
-                          >
-                            수정
-                          </button>
-                          <button
-                            type="button"
-                            class="btn btn-sm btn-danger delete-post-btn"
-                            data-post-id="{{id}}"
-                          >
-                            삭제
-                          </button>
-                        </div>
+                      </div>
+                      <div class="mt-3">
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-primary edit-post-btn"
+                          data-post-id="{{id}}"
+                        >
+                          수정
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger delete-post-btn" data-post-id="{{id}}">
+                          삭제
+                        </button>
                       </div>
                     </div>
                   </div>
+                </div>
 
-                  <div class="edit-view" style="display: none;">
-                    <form class="edit-post-form" data-post-id="{{id}}">
-                      <div class="mb-3">
-                        <label class="form-label">제목</label>
+                <div class="edit-view mt-3" style="display: none;">
+                  <form class="edit-post-form" data-post-id="{{id}}">
+                    <div class="mb-3">
+                      <label class="form-label">제목</label>
+                      <input
+                        type="text"
+                        class="form-control post-title-edit"
+                        value="{{title}}"
+                        required
+                      />
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">내용</label>
+                      <textarea
+                        class="form-control post-content-edit"
+                        rows="3"
+                        required
+                      >{{content}}</textarea>
+                    </div>
+                    <div class="row">
+                      <div class="col-md-6 mb-3">
+                        <label class="form-label">가격</label>
                         <input
-                          type="text"
-                          class="form-control post-title-edit"
-                          value="{{title}}"
+                          type="number"
+                          class="form-control post-price-edit"
+                          value="{{price}}"
+                          min="0"
+                          step="0.01"
                           required
                         />
                       </div>
-                      <div class="mb-3">
-                        <label class="form-label">내용</label>
-                        <textarea
-                          class="form-control post-content-edit"
-                          rows="3"
-                          required
-                        >{{content}}</textarea>
+                      <div class="col-md-6 mb-3">
+                        <label class="form-label">상태</label>
+                        <select class="form-control post-status-edit">
+                          <option value="open" {{#eq status 'open'}}selected{{/eq}}>모집중</option>
+                          <option value="closed" {{#eq status 'closed'}}selected{{/eq}}>마감</option>
+                          <option value="cancelled" {{#eq status 'cancelled'}}selected{{/eq}}>취소됨</option>
+                        </select>
                       </div>
-                      <div class="row">
-                        <div class="col-md-6 mb-3">
-                          <label class="form-label">가격</label>
-                          <input
-                            type="number"
-                            class="form-control post-price-edit"
-                            value="{{price}}"
-                            min="0"
-                            step="0.01"
-                            required
-                          />
-                        </div>
-                        <div class="col-md-6 mb-3">
-                          <label class="form-label">상태</label>
-                          <select class="form-control post-status-edit">
-                            <option value="open" {{#eq status 'open'}}selected{{/eq}}>모집중</option>
-                            <option value="closed" {{#eq status 'closed'}}selected{{/eq}}>마감</option>
-                            <option value="cancelled" {{#eq status 'cancelled'}}selected{{/eq}}>취소됨</option>
-                          </select>
-                        </div>
-                      </div>
-                      <button type="submit" class="btn btn-primary btn-sm">저장</button>
-                      <button
-                        type="button"
-                        class="btn btn-secondary btn-sm cancel-edit-btn"
-                        data-post-id="{{id}}"
-                      >
+                    </div>
+                    <div class="d-flex gap-2">
+                      <button type="submit" class="btn btn-primary btn-sm flex-grow-1">저장</button>
+                      <button type="button" class="btn btn-ghost btn-sm flex-grow-1 cancel-edit-btn" data-post-id="{{id}}">
                         취소
                       </button>
-                    </form>
-                  </div>
+                    </div>
+                  </form>
                 </div>
-              {{/each}}
-              {{#unless posts}}
-                <div class="text-center py-3 text-muted">
-                  아직 등록된 상품이 없습니다.
-                </div>
-              {{/unless}}
-            </script>
-          </div>
-        </div>
+              </div>
+            {{/each}}
+            {{#unless posts}}
+              <div class="text-center py-3 text-muted">
+                아직 등록된 상품이 없습니다.
+              </div>
+            {{/unless}}
+          </script>
+        </section>
       </div>
-    </div>
+    </main>
 
     <script src="scripts/posts.js"></script>
   </body>

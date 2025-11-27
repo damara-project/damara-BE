@@ -206,7 +206,7 @@ export function setupSocketIO(httpServer: HttpServer): SocketServer {
     /**
      * 연결 오류 처리
      */
-    socket.on("error", (error) => {
+    socket.on("error", (error: unknown) => {
       logger.err(`✗ Socket 오류: ${socket.id}`);
       logger.err(error, true);
     });
