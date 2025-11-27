@@ -205,6 +205,12 @@ function resetAllPostParticipationStatus() {
     btn.classList.remove("d-none");
   });
 
+  // 모든 관리하기 버튼 숨기기
+  const allManageBtns = document.querySelectorAll(".manage-post-btn");
+  allManageBtns.forEach((btn) => {
+    btn.classList.add("d-none");
+  });
+
   // 상세 모달이 열려있으면 닫기
   const detailModal = bootstrap.Modal.getInstance(
     document.getElementById("postDetailModal")
@@ -339,9 +345,22 @@ async function loadPosts() {
     const template = Handlebars.compile(templateElement.innerHTML);
     gridElement.innerHTML = template({ posts });
 
-    // 각 게시글에 대해 참여 여부 확인 및 UI 업데이트
+    // 각 게시글에 대해 작성자/참여 여부 확인 및 UI 업데이트
     if (currentUser && currentUser.id) {
-      const openPosts = posts.filter((post) => post.status === "open");
+      const currentUserId = currentUser.id;
+      const authoredPostIds = new Set(
+        posts
+          .filter((post) => post.authorId === currentUserId)
+          .map((post) => post.id)
+      );
+
+      authoredPostIds.forEach((postId) => {
+        updatePostCardForAuthor(postId, true);
+      });
+
+      const openPosts = posts.filter(
+        (post) => post.status === "open" && !authoredPostIds.has(post.id)
+      );
       for (const post of openPosts) {
         const isParticipant = await checkParticipationStatus(post.id);
         updatePostCardParticipationStatus(post.id, isParticipant);
@@ -760,126 +779,112 @@ if (createPostForm) {
 /**
  * 상품 상세보기
  */
-document.addEventListener("click", async (e) => {
-  if (e.target.classList.contains("view-post-btn")) {
-    const postId = e.target.getAttribute("data-post-id");
+async function openPostDetail(postId) {
+  try {
+    const response = await fetch(`${API_BASE_POSTS}/${postId}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
 
-    try {
-      const response = await fetch(`${API_BASE_POSTS}/${postId}`);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+    const post = await response.json();
 
-      const post = await response.json();
+    document.getElementById("post-detail-title").textContent = post.title;
 
-      document.getElementById("post-detail-title").textContent = post.title;
-
-      let imagesHTML = "";
-      if (post.images && post.images.length > 0) {
-        imagesHTML = '<div class="mb-3"><div class="row g-2">';
-        post.images.forEach((img) => {
-          imagesHTML += `
-            <div class="col-md-4">
-              <img src="${img.imageUrl}" alt="${post.title}" class="img-fluid rounded" />
-            </div>
-          `;
-        });
-        imagesHTML += "</div></div>";
-      }
-
-      const statusBadge =
-        {
-          open: '<span class="badge bg-success">모집중</span>',
-          closed: '<span class="badge bg-secondary">마감</span>',
-          cancelled: '<span class="badge bg-danger">취소됨</span>',
-        }[post.status] || "";
-
-      const formatDate = (dateString) => {
-        if (!dateString) return "";
-        return new Date(dateString).toLocaleString("ko-KR");
-      };
-
-      // 참여 여부 확인
-      let isParticipant = false;
-      if (currentUser && currentUser.id && post.status === "open") {
-        isParticipant = await checkParticipationStatus(post.id);
-      }
-
-      // 채팅방 정보 가져오기 (참여한 경우에만)
-      let chatRoomId = null;
-      if (isParticipant && currentUser && currentUser.id) {
-        try {
-          const chatRoomResponse = await fetch(
-            `/api/chat/rooms/post/${post.id}`
-          );
-          if (chatRoomResponse.ok) {
-            const chatRoom = await chatRoomResponse.json();
-            chatRoomId = chatRoom.id;
-          }
-        } catch (error) {
-          console.warn("채팅방 정보 조회 실패:", error);
-        }
-      }
-
-      document.getElementById("post-detail-body").innerHTML = `
-        ${imagesHTML}
-        <p class="mb-3">${post.content}</p>
-        <div class="row mb-3">
-          <div class="col-md-6">
-            <p><strong>가격:</strong> <span class="text-primary fs-4">${
-              post.price
-            }원</span></p>
-            <p><strong>상태:</strong> ${statusBadge}</p>
-            <p><strong>최소 인원:</strong> ${post.minParticipants}명</p>
-            <p><strong>현재 인원:</strong> ${post.currentQuantity}명</p>
+    let imagesHTML = "";
+    if (post.images && post.images.length > 0) {
+      imagesHTML = '<div class="mb-3"><div class="row g-2">';
+      post.images.forEach((img) => {
+        imagesHTML += `
+          <div class="col-md-4">
+            <img src="${img.imageUrl}" alt="${post.title}" class="img-fluid rounded" />
           </div>
-          <div class="col-md-6">
-            <p><strong>마감일:</strong> ${formatDate(post.deadline)}</p>
-            ${
-              post.pickupLocation
-                ? `<p><strong>픽업 장소:</strong> ${post.pickupLocation}</p>`
-                : ""
-            }
-            <p><strong>작성일:</strong> ${formatDate(post.createdAt)}</p>
+        `;
+      });
+      imagesHTML += "</div></div>";
+    }
+
+    const statusBadge =
+      {
+        open: '<span class="badge bg-success">모집중</span>',
+        closed: '<span class="badge bg-secondary">마감</span>',
+        cancelled: '<span class="badge bg-danger">취소됨</span>',
+      }[post.status] || "";
+
+    const formatDate = (dateString) => {
+      if (!dateString) return "";
+      return new Date(dateString).toLocaleString("ko-KR");
+    };
+
+    const isAuthor =
+      !!currentUser && !!currentUser.id && post.authorId === currentUser.id;
+
+    // 참여 여부 확인 (작성자는 제외)
+    let isParticipant = false;
+    if (!isAuthor && currentUser && currentUser.id && post.status === "open") {
+      isParticipant = await checkParticipationStatus(post.id);
+    }
+
+    // 채팅방 정보 가져오기 (작성자 또는 참여자)
+    let chatRoomId = null;
+    if (currentUser && currentUser.id && (isParticipant || isAuthor)) {
+      try {
+        const chatRoomResponse = await fetch(`/api/chat/rooms/post/${post.id}`);
+        if (chatRoomResponse.ok) {
+          const chatRoom = await chatRoomResponse.json();
+          chatRoomId = chatRoom.id;
+        }
+      } catch (error) {
+        console.warn("채팅방 정보 조회 실패:", error);
+      }
+    }
+
+    const buildChatLink = () => {
+      if (!currentUser || !currentUser.id) return "#";
+      const baseLink = `/chat?postId=${post.id}&userId=${currentUser.id}`;
+      return chatRoomId ? `${baseLink}&chatRoomId=${chatRoomId}` : baseLink;
+    };
+
+    let actionSection = "";
+    if (isAuthor && currentUser) {
+      const chatLink = buildChatLink();
+      actionSection = `
+        <div class="border-top pt-3 mt-3">
+          <div class="alert alert-primary mb-3" role="alert">
+            작성자 전용 관리 메뉴입니다. 채팅방에서 참여자와 소통하세요.
+          </div>
+          <div class="d-grid gap-2">
+            <a href="${chatLink}"
+               class="btn btn-info w-100 text-white fw-bold"
+               style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+              💬 채팅방 관리
+            </a>
           </div>
         </div>
-        ${
-          post.status === "open"
-            ? isParticipant
-              ? `
+      `;
+    } else if (post.status === "open") {
+      if (isParticipant && currentUser) {
+        const chatLink = buildChatLink();
+        actionSection = `
           <div class="border-top pt-3 mt-3">
             <div class="joined-status-container" data-post-id="${post.id}">
               <div class="d-flex align-items-center justify-content-center mb-3 p-2 rounded" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
                 <span class="text-white fw-bold">✓ 참여중</span>
               </div>
               <div class="d-grid gap-2">
-                ${
-                  chatRoomId
-                    ? `
-                  <a href="/chat?postId=${post.id}&userId=${currentUser.id}&chatRoomId=${chatRoomId}" 
-                     class="btn btn-info w-100 text-white fw-bold" 
-                     style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
-                    💬 채팅방 입장
-                  </a>
-                `
-                    : `
-                  <a href="/chat?postId=${post.id}&userId=${currentUser.id}" 
-                     class="btn btn-info w-100 text-white fw-bold" 
-                     style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
-                    💬 채팅방 입장
-                  </a>
-                `
-                }
-                <button class="btn btn-outline-warning w-100 cancel-join-post-btn-detail" data-post-id="${
-                  post.id
-                }" data-user-id="${currentUser.id}">
+                <a href="${chatLink}"
+                   class="btn btn-info w-100 text-white fw-bold"
+                   style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+                  💬 채팅방 입장
+                </a>
+                <button class="btn btn-outline-warning w-100 cancel-join-post-btn-detail" data-post-id="${post.id}" data-user-id="${currentUser.id}">
                   참여취소
                 </button>
               </div>
             </div>
           </div>
-        `
-              : `
+        `;
+      } else {
+        actionSection = `
           <div class="border-top pt-3 mt-3">
             <button class="btn btn-success w-100 fw-bold join-post-btn-detail" data-post-id="${post.id}" style="font-size: 1.1rem; padding: 12px;">
               참여하기
@@ -895,19 +900,55 @@ document.addEventListener("click", async (e) => {
               </div>
             </div>
           </div>
-        `
-            : ""
-        }
-      `;
-
-      const detailModal = new bootstrap.Modal(
-        document.getElementById("postDetailModal")
-      );
-      detailModal.show();
-    } catch (error) {
-      console.error("Error loading post detail:", error);
-      showToast("상품 상세 정보를 불러오는 중 오류가 발생했습니다.", "error");
+        `;
+      }
     }
+
+    document.getElementById("post-detail-body").innerHTML = `
+      ${imagesHTML}
+      <p class="mb-3">${post.content}</p>
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <p><strong>가격:</strong> <span class="text-primary fs-4">${
+            post.price
+          }원</span></p>
+          <p><strong>상태:</strong> ${statusBadge}</p>
+          <p><strong>최소 인원:</strong> ${post.minParticipants}명</p>
+          <p><strong>현재 인원:</strong> ${post.currentQuantity}명</p>
+        </div>
+        <div class="col-md-6">
+          <p><strong>마감일:</strong> ${formatDate(post.deadline)}</p>
+          ${
+            post.pickupLocation
+              ? `<p><strong>픽업 장소:</strong> ${post.pickupLocation}</p>`
+              : ""
+          }
+          <p><strong>작성일:</strong> ${formatDate(post.createdAt)}</p>
+        </div>
+      </div>
+      ${actionSection}
+    `;
+
+    const detailModal = new bootstrap.Modal(
+      document.getElementById("postDetailModal")
+    );
+    detailModal.show();
+  } catch (error) {
+    console.error("Error loading post detail:", error);
+    showToast("상품 상세 정보를 불러오는 중 오류가 발생했습니다.", "error");
+  }
+}
+
+document.addEventListener("click", async (e) => {
+  if (e.target.classList.contains("view-post-btn")) {
+    const postId = e.target.getAttribute("data-post-id");
+    await openPostDetail(postId);
+  }
+
+  if (e.target.classList.contains("manage-post-btn")) {
+    const postId = e.target.getAttribute("data-post-id");
+    await openPostDetail(postId);
+    return;
   }
 
   /**
