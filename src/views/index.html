@@ -58,6 +58,11 @@
                 등록한 상품 보기
               </a>
             </li>
+            <li class="nav-item me-2">
+              <a class="btn btn-outline-info btn-sm" href="/chat">
+                💬 실시간 채팅
+              </a>
+            </li>
             <li class="nav-item">
               <button
                 class="btn btn-outline-primary btn-sm me-2"
@@ -182,7 +187,22 @@
                       >
                         참여하기
                       </button>
+                      <div class="d-none joined-status-container" data-post-id="{{id}}">
+                        <div class="text-center mb-2 text-success fw-bold small">참여중...</div>
+                        <button
+                          class="btn btn-sm btn-warning w-100 cancel-join-post-btn"
+                          data-post-id="{{id}}"
+                        >
+                          참여취소
+                        </button>
+                      </div>
                     {{/eq}}
+                    <button
+                      class="btn btn-sm btn-outline-primary w-100 mt-2 d-none manage-post-btn"
+                      data-post-id="{{id}}"
+                    >
+                      관리하기
+                    </button>
                   </div>
                 </div>
               </div>

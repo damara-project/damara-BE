@@ -144,6 +144,7 @@ function saveUserToStorage(user) {
   currentUser = user;
   localStorage.setItem("currentUser", JSON.stringify(user));
   updateUIForLoggedInUser();
+  loadPosts();
 }
 
 /**
@@ -187,6 +188,39 @@ function updateUIForLoggedInUser() {
 }
 
 /**
+ * 모든 게시글 카드의 참여 상태 초기화 (로그아웃 시)
+ */
+function resetAllPostParticipationStatus() {
+  // 모든 참여 상태 컨테이너 숨기기
+  const allJoinedContainers = document.querySelectorAll(
+    ".joined-status-container"
+  );
+  allJoinedContainers.forEach((container) => {
+    container.classList.add("d-none");
+  });
+
+  // 모든 참여하기 버튼 표시
+  const allJoinBtns = document.querySelectorAll(".join-post-btn");
+  allJoinBtns.forEach((btn) => {
+    btn.classList.remove("d-none");
+  });
+
+  // 모든 관리하기 버튼 숨기기
+  const allManageBtns = document.querySelectorAll(".manage-post-btn");
+  allManageBtns.forEach((btn) => {
+    btn.classList.add("d-none");
+  });
+
+  // 상세 모달이 열려있으면 닫기
+  const detailModal = bootstrap.Modal.getInstance(
+    document.getElementById("postDetailModal")
+  );
+  if (detailModal) {
+    detailModal.hide();
+  }
+}
+
+/**
  * 로그아웃 상태 UI 업데이트
  */
 function updateUIForLoggedOutUser() {
@@ -201,6 +235,90 @@ function updateUIForLoggedOutUser() {
   if (registerBtnParent) registerBtnParent.classList.remove("d-none");
   if (currentUserDisplay) currentUserDisplay.classList.add("d-none");
   if (userInfoSection) userInfoSection.classList.add("d-none");
+
+  // 게시글 참여 상태 초기화
+  resetAllPostParticipationStatus();
+
+  // 게시글 목록 다시 로드하여 UI 초기화
+  loadPosts();
+}
+
+/**
+ * 게시글의 참여 여부 확인
+ */
+async function checkParticipationStatus(postId) {
+  if (!currentUser || !currentUser.id) {
+    return false;
+  }
+
+  try {
+    const checkUrl = `${API_BASE_POSTS}/${postId}/participate/${currentUser.id}`;
+    const checkResponse = await fetch(checkUrl);
+
+    if (checkResponse.ok) {
+      const checkData = await checkResponse.json();
+      return checkData.isParticipant || false;
+    }
+    return false;
+  } catch (error) {
+    console.warn(`참여 여부 확인 실패 (postId: ${postId}):`, error);
+    return false;
+  }
+}
+
+/**
+ * 게시글 카드의 참여 상태 UI 업데이트
+ */
+function updatePostCardParticipationStatus(postId, isParticipant) {
+  const joinBtn = document.querySelector(
+    `.join-post-btn[data-post-id="${postId}"]`
+  );
+  const joinedContainer = document.querySelector(
+    `.joined-status-container[data-post-id="${postId}"]`
+  );
+  const cancelBtn = joinedContainer?.querySelector(
+    `.cancel-join-post-btn[data-post-id="${postId}"]`
+  );
+
+  if (isParticipant) {
+    if (joinBtn) joinBtn.classList.add("d-none");
+    if (joinedContainer) {
+      joinedContainer.classList.remove("d-none");
+      if (cancelBtn && currentUser) {
+        cancelBtn.setAttribute("data-user-id", currentUser.id);
+      }
+    }
+  } else {
+    if (joinBtn) joinBtn.classList.remove("d-none");
+    if (joinedContainer) joinedContainer.classList.add("d-none");
+  }
+}
+
+/**
+ * 게시글 카드의 작성자 전용 UI 업데이트
+ */
+function updatePostCardForAuthor(postId, isAuthor) {
+  const joinBtn = document.querySelector(
+    `.join-post-btn[data-post-id="${postId}"]`
+  );
+  const cancelBtn = document.querySelector(
+    `.cancel-join-post-btn[data-post-id="${postId}"]`
+  );
+  const joinedBtn = document.querySelector(
+    `.joined-post-btn[data-post-id="${postId}"]`
+  );
+  const manageBtn = document.querySelector(
+    `.manage-post-btn[data-post-id="${postId}"]`
+  );
+
+  if (isAuthor) {
+    if (joinBtn) joinBtn.classList.add("d-none");
+    if (cancelBtn) cancelBtn.classList.add("d-none");
+    if (joinedBtn) joinedBtn.classList.add("d-none");
+    if (manageBtn) manageBtn.classList.remove("d-none");
+  } else if (manageBtn) {
+    manageBtn.classList.add("d-none");
+  }
 }
 
 /**
@@ -226,6 +344,28 @@ async function loadPosts() {
     ensureHandlebarsHelpers();
     const template = Handlebars.compile(templateElement.innerHTML);
     gridElement.innerHTML = template({ posts });
+
+    // 각 게시글에 대해 작성자/참여 여부 확인 및 UI 업데이트
+    if (currentUser && currentUser.id) {
+      const currentUserId = currentUser.id;
+      const authoredPostIds = new Set(
+        posts
+          .filter((post) => post.authorId === currentUserId)
+          .map((post) => post.id)
+      );
+
+      authoredPostIds.forEach((postId) => {
+        updatePostCardForAuthor(postId, true);
+      });
+
+      const openPosts = posts.filter(
+        (post) => post.status === "open" && !authoredPostIds.has(post.id)
+      );
+      for (const post of openPosts) {
+        const isParticipant = await checkParticipationStatus(post.id);
+        updatePostCardParticipationStatus(post.id, isParticipant);
+      }
+    }
   } catch (error) {
     console.error("Error loading posts:", error);
     showToast("상품 목록을 불러오는 중 오류가 발생했습니다.", "error");
@@ -639,85 +779,492 @@ if (createPostForm) {
 /**
  * 상품 상세보기
  */
+async function openPostDetail(postId) {
+  try {
+    const response = await fetch(`${API_BASE_POSTS}/${postId}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const post = await response.json();
+
+    document.getElementById("post-detail-title").textContent = post.title;
+
+    let imagesHTML = "";
+    if (post.images && post.images.length > 0) {
+      imagesHTML = '<div class="mb-3"><div class="row g-2">';
+      post.images.forEach((img) => {
+        imagesHTML += `
+          <div class="col-md-4">
+            <img src="${img.imageUrl}" alt="${post.title}" class="img-fluid rounded" />
+          </div>
+        `;
+      });
+      imagesHTML += "</div></div>";
+    }
+
+    const statusBadge =
+      {
+        open: '<span class="badge bg-success">모집중</span>',
+        closed: '<span class="badge bg-secondary">마감</span>',
+        cancelled: '<span class="badge bg-danger">취소됨</span>',
+      }[post.status] || "";
+
+    const formatDate = (dateString) => {
+      if (!dateString) return "";
+      return new Date(dateString).toLocaleString("ko-KR");
+    };
+
+    const isAuthor =
+      !!currentUser && !!currentUser.id && post.authorId === currentUser.id;
+
+    // 참여 여부 확인 (작성자는 제외)
+    let isParticipant = false;
+    if (!isAuthor && currentUser && currentUser.id && post.status === "open") {
+      isParticipant = await checkParticipationStatus(post.id);
+    }
+
+    // 채팅방 정보 가져오기 (작성자 또는 참여자)
+    let chatRoomId = null;
+    if (currentUser && currentUser.id && (isParticipant || isAuthor)) {
+      try {
+        const chatRoomResponse = await fetch(`/api/chat/rooms/post/${post.id}`);
+        if (chatRoomResponse.ok) {
+          const chatRoom = await chatRoomResponse.json();
+          chatRoomId = chatRoom.id;
+        }
+      } catch (error) {
+        console.warn("채팅방 정보 조회 실패:", error);
+      }
+    }
+
+    const buildChatLink = () => {
+      if (!currentUser || !currentUser.id) return "#";
+      const baseLink = `/chat?postId=${post.id}&userId=${currentUser.id}`;
+      return chatRoomId ? `${baseLink}&chatRoomId=${chatRoomId}` : baseLink;
+    };
+
+    let actionSection = "";
+    if (isAuthor && currentUser) {
+      const chatLink = buildChatLink();
+      actionSection = `
+        <div class="border-top pt-3 mt-3">
+          <div class="alert alert-primary mb-3" role="alert">
+            작성자 전용 관리 메뉴입니다. 채팅방에서 참여자와 소통하세요.
+          </div>
+          <div class="d-grid gap-2">
+            <a href="${chatLink}"
+               class="btn btn-info w-100 text-white fw-bold"
+               style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+              💬 채팅방 관리
+            </a>
+          </div>
+        </div>
+      `;
+    } else if (post.status === "open") {
+      if (isParticipant && currentUser) {
+        const chatLink = buildChatLink();
+        actionSection = `
+          <div class="border-top pt-3 mt-3">
+            <div class="joined-status-container" data-post-id="${post.id}">
+              <div class="d-flex align-items-center justify-content-center mb-3 p-2 rounded" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <span class="text-white fw-bold">✓ 참여중</span>
+              </div>
+              <div class="d-grid gap-2">
+                <a href="${chatLink}"
+                   class="btn btn-info w-100 text-white fw-bold"
+                   style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+                  💬 채팅방 입장
+                </a>
+                <button class="btn btn-outline-warning w-100 cancel-join-post-btn-detail" data-post-id="${post.id}" data-user-id="${currentUser.id}">
+                  참여취소
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      } else {
+        actionSection = `
+          <div class="border-top pt-3 mt-3">
+            <button class="btn btn-success w-100 fw-bold join-post-btn-detail" data-post-id="${post.id}" style="font-size: 1.1rem; padding: 12px;">
+              참여하기
+            </button>
+            <div class="d-none joined-status-container" data-post-id="${post.id}">
+              <div class="d-flex align-items-center justify-content-center mb-3 p-2 rounded" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <span class="text-white fw-bold">✓ 참여중</span>
+              </div>
+              <div class="d-grid gap-2">
+                <button class="btn btn-warning w-100 cancel-join-post-btn-detail" data-post-id="${post.id}">
+                  참여취소
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    document.getElementById("post-detail-body").innerHTML = `
+      ${imagesHTML}
+      <p class="mb-3">${post.content}</p>
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <p><strong>가격:</strong> <span class="text-primary fs-4">${
+            post.price
+          }원</span></p>
+          <p><strong>상태:</strong> ${statusBadge}</p>
+          <p><strong>최소 인원:</strong> ${post.minParticipants}명</p>
+          <p><strong>현재 인원:</strong> ${post.currentQuantity}명</p>
+        </div>
+        <div class="col-md-6">
+          <p><strong>마감일:</strong> ${formatDate(post.deadline)}</p>
+          ${
+            post.pickupLocation
+              ? `<p><strong>픽업 장소:</strong> ${post.pickupLocation}</p>`
+              : ""
+          }
+          <p><strong>작성일:</strong> ${formatDate(post.createdAt)}</p>
+        </div>
+      </div>
+      ${actionSection}
+    `;
+
+    const detailModal = new bootstrap.Modal(
+      document.getElementById("postDetailModal")
+    );
+    detailModal.show();
+  } catch (error) {
+    console.error("Error loading post detail:", error);
+    showToast("상품 상세 정보를 불러오는 중 오류가 발생했습니다.", "error");
+  }
+}
+
 document.addEventListener("click", async (e) => {
   if (e.target.classList.contains("view-post-btn")) {
     const postId = e.target.getAttribute("data-post-id");
+    await openPostDetail(postId);
+  }
+
+  if (e.target.classList.contains("manage-post-btn")) {
+    const postId = e.target.getAttribute("data-post-id");
+    await openPostDetail(postId);
+    return;
+  }
+
+  /**
+   * 공동구매 참여 처리
+   */
+  async function handleJoinPost(postId, joinBtnElement = null) {
+    if (!currentUser || !currentUser.id) {
+      showToast("로그인이 필요합니다.", "warning");
+      return;
+    }
+
+    // 버튼 상태 업데이트 (참여중... 표시)
+    if (joinBtnElement) {
+      joinBtnElement.textContent = "참여중...";
+      joinBtnElement.disabled = true;
+    }
 
     try {
-      const response = await fetch(`${API_BASE_POSTS}/${postId}`);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      // 먼저 이미 참여했는지 확인
+      const checkUrl = `${API_BASE_POSTS}/${postId}/participate/${currentUser.id}`;
+      console.log("참여 여부 확인 URL:", checkUrl);
 
-      const post = await response.json();
+      const checkResponse = await fetch(checkUrl);
 
-      document.getElementById("post-detail-title").textContent = post.title;
-
-      let imagesHTML = "";
-      if (post.images && post.images.length > 0) {
-        imagesHTML = '<div class="mb-3"><div class="row g-2">';
-        post.images.forEach((img) => {
-          imagesHTML += `
-            <div class="col-md-4">
-              <img src="${img.imageUrl}" alt="${post.title}" class="img-fluid rounded" />
-            </div>
-          `;
-        });
-        imagesHTML += "</div></div>";
-      }
-
-      const statusBadge =
-        {
-          open: '<span class="badge bg-success">모집중</span>',
-          closed: '<span class="badge bg-secondary">마감</span>',
-          cancelled: '<span class="badge bg-danger">취소됨</span>',
-        }[post.status] || "";
-
-      const formatDate = (dateString) => {
-        if (!dateString) return "";
-        return new Date(dateString).toLocaleString("ko-KR");
-      };
-
-      document.getElementById("post-detail-body").innerHTML = `
-        ${imagesHTML}
-        <p class="mb-3">${post.content}</p>
-        <div class="row mb-3">
-          <div class="col-md-6">
-            <p><strong>가격:</strong> <span class="text-primary fs-4">${
-              post.price
-            }원</span></p>
-            <p><strong>상태:</strong> ${statusBadge}</p>
-            <p><strong>최소 인원:</strong> ${post.minParticipants}명</p>
-            <p><strong>현재 인원:</strong> ${post.currentQuantity}명</p>
-          </div>
-          <div class="col-md-6">
-            <p><strong>마감일:</strong> ${formatDate(post.deadline)}</p>
-            ${
-              post.pickupLocation
-                ? `<p><strong>픽업 장소:</strong> ${post.pickupLocation}</p>`
-                : ""
-            }
-            <p><strong>작성일:</strong> ${formatDate(post.createdAt)}</p>
-          </div>
-        </div>
-        ${
-          post.status === "open"
-            ? `
-          <button class="btn btn-success w-100 join-post-btn-detail" data-post-id="${post.id}">
-            참여하기
-          </button>
-        `
-            : ""
+      // 응답이 성공적이지 않으면 참여하지 않은 것으로 간주하고 계속 진행
+      let isAlreadyParticipant = false;
+      if (checkResponse.ok) {
+        try {
+          const checkData = await checkResponse.json();
+          isAlreadyParticipant = checkData.isParticipant || false;
+          console.log("참여 여부:", isAlreadyParticipant);
+        } catch (e) {
+          // JSON 파싱 실패 시 무시하고 계속 진행
+          console.warn("참여 여부 확인 실패, 계속 진행:", e);
         }
-      `;
+      } else {
+        console.warn(
+          `참여 여부 확인 실패 (${checkResponse.status}), 계속 진행`
+        );
+      }
 
-      const detailModal = new bootstrap.Modal(
+      if (isAlreadyParticipant) {
+        showToast("이미 참여한 공동구매입니다.", "info");
+        return;
+      }
+
+      // 참여하기
+      const participateUrl = `${API_BASE_POSTS}/${postId}/participate`;
+      console.log("참여하기 URL:", participateUrl);
+      console.log("요청 데이터:", { userId: currentUser.id });
+
+      const response = await fetch(participateUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId: currentUser.id,
+        }),
+      });
+
+      console.log("응답 상태:", response.status, response.statusText);
+
+      // 응답이 성공적이지 않으면 에러 처리
+      if (!response.ok) {
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        const contentType = response.headers.get("content-type");
+
+        // JSON 응답인 경우에만 파싱 시도
+        if (contentType && contentType.includes("application/json")) {
+          try {
+            const error = await response.json();
+            errorMessage = error.error || errorMessage;
+          } catch (e) {
+            // JSON 파싱 실패 시 기본 메시지 사용
+            console.error("Error parsing error response:", e);
+          }
+        } else {
+          // HTML 응답인 경우 (404 페이지 등)
+          const text = await response.text();
+          console.error(
+            "Server returned HTML instead of JSON:",
+            text.substring(0, 200)
+          );
+          errorMessage = `서버 오류 (${response.status}): API 엔드포인트를 찾을 수 없습니다.`;
+        }
+
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      showToast("공동구매에 참여했습니다! 채팅방으로 이동합니다...", "success");
+
+      // 채팅방 정보 가져오기
+      let chatRoomId = null;
+      try {
+        const chatRoomResponse = await fetch(`/api/chat/rooms/post/${postId}`);
+        if (chatRoomResponse.ok) {
+          const chatRoom = await chatRoomResponse.json();
+          chatRoomId = chatRoom.id;
+        }
+      } catch (error) {
+        console.warn("채팅방 정보 조회 실패:", error);
+      }
+
+      // UI 업데이트: 상세 모달이 열려있으면 버튼 상태 변경
+      const detailModal = bootstrap.Modal.getInstance(
         document.getElementById("postDetailModal")
       );
-      detailModal.show();
+      if (detailModal && detailModal._isShown) {
+        const joinBtn = document.querySelector(
+          `.join-post-btn-detail[data-post-id="${postId}"]`
+        );
+        const joinedContainer = document.querySelector(
+          `.joined-status-container[data-post-id="${postId}"]`
+        );
+        const cancelBtn = joinedContainer?.querySelector(
+          `.cancel-join-post-btn-detail[data-post-id="${postId}"]`
+        );
+
+        if (joinBtn) joinBtn.classList.add("d-none");
+        if (joinedContainer) {
+          joinedContainer.classList.remove("d-none");
+          if (cancelBtn) {
+            cancelBtn.setAttribute("data-user-id", currentUser.id);
+          }
+
+          // 채팅방 입장 버튼 추가
+          const chatButtonHTML = chatRoomId
+            ? `<a href="/chat?postId=${postId}&userId=${currentUser.id}&chatRoomId=${chatRoomId}" 
+                   class="btn btn-info w-100 text-white fw-bold mb-2" 
+                   style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+                  💬 채팅방 입장
+                </a>`
+            : `<a href="/chat?postId=${postId}&userId=${currentUser.id}" 
+                   class="btn btn-info w-100 text-white fw-bold mb-2" 
+                   style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+                  💬 채팅방 입장
+                </a>`;
+
+          // 참여중 상태 표시 추가
+          const statusHTML = `<div class="d-flex align-items-center justify-content-center mb-3 p-2 rounded" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <span class="text-white fw-bold">✓ 참여중</span>
+          </div>`;
+
+          // 기존 내용을 유지하면서 채팅방 버튼과 상태 표시 추가
+          if (!joinedContainer.querySelector(".text-white.fw-bold")) {
+            joinedContainer.insertAdjacentHTML("afterbegin", statusHTML);
+          }
+          if (!joinedContainer.querySelector('a[href*="/chat"]')) {
+            const cancelBtnParent = cancelBtn?.parentElement;
+            if (cancelBtnParent) {
+              cancelBtnParent.insertAdjacentHTML("beforebegin", chatButtonHTML);
+            }
+          }
+        }
+      }
+
+      // UI 업데이트: 카드 뷰에서도 버튼 상태 변경
+      const cardJoinBtn = document.querySelector(
+        `.join-post-btn[data-post-id="${postId}"]`
+      );
+      const cardJoinedContainer = document.querySelector(
+        `.joined-status-container[data-post-id="${postId}"]`
+      );
+      const cardCancelBtn = cardJoinedContainer?.querySelector(
+        `.cancel-join-post-btn[data-post-id="${postId}"]`
+      );
+
+      if (cardJoinBtn) cardJoinBtn.classList.add("d-none");
+      if (cardJoinedContainer) {
+        cardJoinedContainer.classList.remove("d-none");
+        if (cardCancelBtn) {
+          cardCancelBtn.setAttribute("data-user-id", currentUser.id);
+        }
+      }
+
+      // 게시글 목록 새로고침
+      loadPosts();
+
+      // 상세 모달이 열려있으면 닫기
+      if (detailModal) {
+        detailModal.hide();
+      }
+
+      // 채팅방 조회/생성 후 채팅 페이지로 이동
+      try {
+        const chatRoomResponse = await fetch(`/api/chat/rooms/post/${postId}`);
+
+        if (chatRoomResponse.ok) {
+          const chatRoom = await chatRoomResponse.json();
+          // 채팅 페이지로 이동 (Post ID와 User ID를 쿼리 파라미터로 전달)
+          window.location.href = `/chat?postId=${postId}&userId=${currentUser.id}&chatRoomId=${chatRoom.id}`;
+        } else {
+          // 채팅방 생성 실패 시에도 채팅 페이지로 이동 (수동 입력 가능)
+          window.location.href = `/chat?postId=${postId}&userId=${currentUser.id}`;
+        }
+      } catch (error) {
+        console.error("채팅방 조회 실패:", error);
+        // 에러가 발생해도 채팅 페이지로 이동
+        window.location.href = `/chat?postId=${postId}&userId=${currentUser.id}`;
+      }
     } catch (error) {
-      console.error("Error loading post detail:", error);
-      showToast("상품 상세 정보를 불러오는 중 오류가 발생했습니다.", "error");
+      console.error("Error joining post:", error);
+
+      // 에러 발생 시 버튼 상태 복원
+      if (joinBtnElement) {
+        joinBtnElement.textContent = "참여하기";
+        joinBtnElement.disabled = false;
+      }
+
+      if (error.message.includes("ALREADY_PARTICIPATED")) {
+        showToast("이미 참여한 공동구매입니다.", "warning");
+      } else if (error.message.includes("AUTHOR_CANNOT_JOIN")) {
+        showToast("작성자는 참여할 수 없습니다.", "warning");
+      } else if (error.message.includes("POST_NOT_OPEN")) {
+        showToast("마감되었거나 취소된 공동구매입니다.", "warning");
+      } else if (
+        error.message.includes("404") ||
+        error.message.includes("찾을 수 없습니다")
+      ) {
+        showToast(
+          "API 엔드포인트를 찾을 수 없습니다. 서버를 확인해주세요.",
+          "error"
+        );
+      } else {
+        showToast(`참여 중 오류가 발생했습니다: ${error.message}`, "error");
+      }
+    }
+  }
+
+  /**
+   * 공동구매 참여 취소 처리
+   */
+  async function handleLeavePost(
+    postId,
+    userId,
+    cancelBtnElement = null,
+    isDetailModal = false
+  ) {
+    if (!currentUser || !currentUser.id) {
+      showToast("로그인이 필요합니다.", "warning");
+      return;
+    }
+
+    // 버튼 상태 업데이트 (취소중... 표시)
+    if (cancelBtnElement) {
+      cancelBtnElement.textContent = "취소중...";
+      cancelBtnElement.disabled = true;
+    }
+
+    try {
+      const leaveUrl = `${API_BASE_POSTS}/${postId}/participate/${userId}`;
+      console.log("참여 취소 URL:", leaveUrl);
+
+      const response = await fetch(leaveUrl, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        const contentType = response.headers.get("content-type");
+
+        if (contentType && contentType.includes("application/json")) {
+          try {
+            const error = await response.json();
+            errorMessage = error.error || errorMessage;
+          } catch (e) {
+            console.error("Error parsing error response:", e);
+          }
+        }
+
+        throw new Error(errorMessage);
+      }
+
+      showToast("공동구매 참여를 취소했습니다.", "success");
+
+      // UI 업데이트: 상세 모달이 열려있으면 버튼 상태 변경
+      const detailModal = bootstrap.Modal.getInstance(
+        document.getElementById("postDetailModal")
+      );
+      if (isDetailModal && detailModal && detailModal._isShown) {
+        const joinBtn = document.querySelector(
+          `.join-post-btn-detail[data-post-id="${postId}"]`
+        );
+        const joinedContainer = document.querySelector(
+          `.joined-status-container[data-post-id="${postId}"]`
+        );
+
+        if (joinBtn) joinBtn.classList.remove("d-none");
+        if (joinedContainer) joinedContainer.classList.add("d-none");
+      }
+
+      // UI 업데이트: 카드 뷰에서도 버튼 상태 변경
+      const cardJoinBtn = document.querySelector(
+        `.join-post-btn[data-post-id="${postId}"]`
+      );
+      const cardJoinedContainer = document.querySelector(
+        `.joined-status-container[data-post-id="${postId}"]`
+      );
+
+      if (cardJoinBtn) cardJoinBtn.classList.remove("d-none");
+      if (cardJoinedContainer) cardJoinedContainer.classList.add("d-none");
+
+      // 게시글 목록 새로고침
+      loadPosts();
+    } catch (error) {
+      console.error("Error leaving post:", error);
+
+      // 에러 발생 시 버튼 상태 복원
+      if (cancelBtnElement) {
+        cancelBtnElement.textContent = "취소하기";
+        cancelBtnElement.disabled = false;
+      }
+
+      showToast(`참여 취소 중 오류가 발생했습니다: ${error.message}`, "error");
     }
   }
 
@@ -733,8 +1280,7 @@ document.addEventListener("click", async (e) => {
     }
 
     const postId = e.target.getAttribute("data-post-id");
-    showToast("참여하기 기능은 추후 구현 예정입니다.", "info");
-    // TODO: 참여하기 기능 구현
+    handleJoinPost(postId, e.target);
   }
 
   // 참여하기 버튼 (상세 모달에서)
@@ -749,8 +1295,31 @@ document.addEventListener("click", async (e) => {
     }
 
     const postId = e.target.getAttribute("data-post-id");
-    showToast("참여하기 기능은 추후 구현 예정입니다.", "info");
-    // TODO: 참여하기 기능 구현
+    handleJoinPost(postId, e.target);
+  }
+
+  // 취소하기 버튼 (카드에서)
+  if (e.target.classList.contains("cancel-join-post-btn")) {
+    if (!currentUser) {
+      showToast("로그인이 필요합니다.", "warning");
+      return;
+    }
+
+    const postId = e.target.getAttribute("data-post-id");
+    const userId = e.target.getAttribute("data-user-id") || currentUser.id;
+    handleLeavePost(postId, userId, e.target, false);
+  }
+
+  // 취소하기 버튼 (상세 모달에서)
+  if (e.target.classList.contains("cancel-join-post-btn-detail")) {
+    if (!currentUser) {
+      showToast("로그인이 필요합니다.", "warning");
+      return;
+    }
+
+    const postId = e.target.getAttribute("data-post-id");
+    const userId = e.target.getAttribute("data-user-id") || currentUser.id;
+    handleLeavePost(postId, userId, e.target, true);
   }
 });
 

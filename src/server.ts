@@ -2,6 +2,8 @@ import app, { syncDatabase } from "./app";
 import ENV from "./common/constants/ENV";
 import logger from "jet-logger";
 import { connectDB } from "./db";
+import { createServer } from "http";
+import { setupSocketIO, setIO } from "./config/socket";
 
 /**
  * server.ts
@@ -9,6 +11,7 @@ import { connectDB } from "./db";
  * - Express 애플리케이션을 구동하는 진입점
  * - DB 연결/초기화가 모두 끝난 뒤에만 서버를 열어 오류를 방지한다
  * - app.ts는 라우팅/미들웨어 정의, server.ts는 실행 책임만 갖도록 분리
+ * - Socket.io를 통한 실시간 채팅 기능 추가
  * ---------------------------------------------------------------------------
  */
 
@@ -17,6 +20,7 @@ import { connectDB } from "./db";
  * - 1) MySQL 연결이 가능하지 않다면 즉시 프로세스를 중단
  * - 2) 과제 요구사항에 따라 force: true로 테이블을 초기화
  * - 3) 모든 준비가 끝났을 때 Express 서버를 listen
+ * - 4) Socket.io 서버 초기화
  */
 
 const PORT = process.env.PORT;
@@ -30,10 +34,19 @@ async function startServer() {
     //    - 실제 서비스에서는 false로 바꾸거나 migration을 사용해야 함
     await syncDatabase();
 
-    // 3. Express 서버 시작
-    app.listen(PORT, () => {
+    // 3. HTTP 서버 생성 (Express와 Socket.io를 함께 사용하기 위해)
+    const httpServer = createServer(app);
+
+    // 4. Socket.io 서버 초기화
+    const io = setupSocketIO(httpServer);
+    setIO(io); // 전역으로 Socket.io 인스턴스 저장
+
+    // 5. HTTP 서버 시작
+    httpServer.listen(PORT, () => {
       logger.info(`Server is running on port ${ENV.Port}`);
+      logger.info(`Socket.io 서버가 활성화되었습니다.`);
       console.log(`Server is running on port ${ENV.Port}`);
+      console.log(`Socket.io 서버가 활성화되었습니다.`);
     });
   } catch (error) {
     // 서버를 기동하지 못한 이유를 기록하고 프로세스를 종료한다.

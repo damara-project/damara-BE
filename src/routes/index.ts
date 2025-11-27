@@ -4,6 +4,7 @@ import Paths from "../common/constants/Paths";
 import userRouter from "./users/UserRoutes";
 import postRouter from "./posts/PostRoutes";
 import uploadRouter from "./upload/UploadRoutes";
+import chatRouter from "./chat/ChatRoutes";
 
 const BaseRouter = Router();
 
@@ -15,5 +16,8 @@ BaseRouter.use(Paths.Posts.Base, postRouter);
 
 // Upload 라우터: /api/upload
 BaseRouter.use(Paths.Upload.Base, uploadRouter);
+
+// Chat 라우터: /api/chat
+BaseRouter.use(Paths.Chat.Base, chatRouter);
 
 export default BaseRouter;
