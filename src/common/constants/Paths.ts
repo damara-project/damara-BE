@@ -16,4 +16,7 @@ export default {
   Chat: {
     Base: "/chat",
   },
+  Notifications: {
+    Base: "/notifications",
+  },
 } as const;

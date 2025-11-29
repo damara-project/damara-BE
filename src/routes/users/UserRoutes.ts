@@ -8,6 +8,7 @@ import {
   deleteUser,
   login,
 } from "../../controllers/user.controller";
+import { getFavorites } from "../../controllers/favorite.controller";
 
 const userRouter = Router();
 
@@ -102,7 +103,7 @@ userRouter.get("/", getAllUsers);
  *               nickname: "홍길동"
  *               studentId: "20241234"
  *               department: "컴퓨터공학과"
- *               avatarUrl: "https://example.com/avatar.jpg"
+ *               avatarUrl: "http://3.38.145.117:3000/uploads/images/abc123.png"
  *     responses:
  *       201:
  *         description: 회원가입 성공
@@ -233,6 +234,7 @@ userRouter.get("/:id", getUserById);
  *             user:
  *               nickname: "수정된닉네임"
  *               department: "수정된학과"
+ *               avatarUrl: "http://3.38.145.117:3000/uploads/images/abc123.png"
  *     responses:
  *       200:
  *         description: 수정 성공
@@ -267,5 +269,62 @@ userRouter.put("/:id", updateUser);
  */
 // DELETE /api/users/:id - 회원 삭제
 userRouter.delete("/:id", deleteUser);
+
+/**
+ * @swagger
+ * /api/users/{userId}/favorites:
+ *   get:
+ *     summary: 내가 관심 등록한 게시글 목록 조회
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 사용자 UUID
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *         description: 조회 개수
+ *       - in: query
+ *         name: offset
+ *         schema:
+ *           type: integer
+ *           default: 0
+ *         description: 시작 위치
+ *     responses:
+ *       200:
+ *         description: 관심 목록 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 favorites:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                         format: uuid
+ *                       postId:
+ *                         type: string
+ *                         format: uuid
+ *                       post:
+ *                         $ref: '#/components/schemas/Post'
+ *                       createdAt:
+ *                         type: string
+ *                         format: date-time
+ *                 total:
+ *                   type: integer
+ *                   description: 전체 관심 개수
+ */
+// GET /api/users/:userId/favorites - 내가 관심 등록한 게시글 목록 조회
+userRouter.get("/:userId/favorites", getFavorites);
 
 export default userRouter;

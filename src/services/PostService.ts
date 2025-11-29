@@ -8,6 +8,8 @@ import UserModel from "../models/User";
 import { UserService } from "./UserService";
 import { PostParticipantRepo } from "../repos/PostParticipantRepo";
 import PostModel from "../models/Post";
+import { FavoriteService } from "./FavoriteService";
+import { NotificationService } from "./NotificationService";
 
 export const PostService = {
   /**
@@ -28,13 +30,28 @@ export const PostService = {
 
   /**
    * ID로 상품 조회
+   * - favoriteCount와 isFavorite 포함
    */
-  async getPostById(id: string) {
+  async getPostById(id: string, userId?: string) {
     const post = await PostRepo.findById(id);
     if (!post) {
       throw new RouteError(HttpStatusCodes.NOT_FOUND, "POST_NOT_FOUND");
     }
-    return post;
+
+    // 관심 수 조회
+    const favoriteCount = await FavoriteService.getFavoriteCount(id);
+
+    // 관심 여부 확인 (userId가 제공된 경우)
+    let isFavorite = false;
+    if (userId) {
+      isFavorite = await FavoriteService.isFavorite(id, userId);
+    }
+
+    return {
+      ...post,
+      favoriteCount,
+      isFavorite,
+    };
   },
 
   /**
@@ -135,9 +152,12 @@ export const PostService = {
       }
 
       const participants = await PostParticipantRepo.findByPostId(id);
+      const participantUserIds: string[] = [];
+
       for (const participant of participants) {
         try {
           await UserService.updateTrustScore(participant.userId, 5);
+          participantUserIds.push(participant.userId);
         } catch (error) {
           console.error(
             `Failed to update trust score for participant ${participant.userId}:`,
@@ -145,12 +165,48 @@ export const PostService = {
           );
         }
       }
+
+      // 공동구매 완료 알림 생성 (주최자 + 참여자)
+      try {
+        const allUserIds = [post.authorId, ...participantUserIds];
+        await NotificationService.createPostCompletedNotification(
+          id,
+          allUserIds
+        );
+      } catch (error) {
+        console.error("Failed to create completion notification:", error);
+      }
     } else if (newStatus === "cancelled") {
       // 공동구매 취소: 주최자 -5점
       try {
         await UserService.updateTrustScore(post.authorId, -5);
       } catch (error) {
         console.error("Failed to update trust score for author:", error);
+      }
+
+      // 공동구매 취소 알림 생성 (참여자 + 관심 등록자)
+      try {
+        const participants = await PostParticipantRepo.findByPostId(id);
+        const participantUserIds = participants.map((p) => p.userId);
+
+        // 관심 등록자 목록 가져오기
+        const { FavoriteRepo } = await import("../repos/FavoriteRepo");
+        const favorites = await FavoriteRepo.findByPostId(id);
+        const favoriteUserIds = favorites.map((f) => f.userId);
+
+        // 중복 제거
+        const allUserIds = [
+          ...new Set([...participantUserIds, ...favoriteUserIds]),
+        ];
+
+        if (allUserIds.length > 0) {
+          await NotificationService.createPostCancelledNotification(
+            id,
+            allUserIds
+          );
+        }
+      } catch (error) {
+        console.error("Failed to create cancellation notification:", error);
       }
     }
 
@@ -183,25 +239,64 @@ export const PostService = {
         }
 
         // 참여자들에게 +5점
-        const participants = await PostParticipantRepo.findByPostId(id);
-        for (const participant of participants) {
-          try {
-            await UserService.updateTrustScore(participant.userId, 5);
-          } catch (error) {
-            console.error(
-              `Failed to update trust score for participant ${participant.userId}:`,
-              error
-            );
-          }
-        }
-      } else if (patch.status === "cancelled") {
-        // 공동구매 취소: 주최자 -5점
+      const participants = await PostParticipantRepo.findByPostId(id);
+      const participantUserIds: string[] = [];
+
+      for (const participant of participants) {
         try {
-          await UserService.updateTrustScore(oldPost.authorId, -5);
+          await UserService.updateTrustScore(participant.userId, 5);
+          participantUserIds.push(participant.userId);
         } catch (error) {
-          console.error("Failed to update trust score for author:", error);
+          console.error(
+            `Failed to update trust score for participant ${participant.userId}:`,
+            error
+          );
         }
       }
+
+      // 공동구매 완료 알림 생성 (주최자 + 참여자)
+      try {
+        const allUserIds = [oldPost.authorId, ...participantUserIds];
+        await NotificationService.createPostCompletedNotification(
+          id,
+          allUserIds
+        );
+      } catch (error) {
+        console.error("Failed to create completion notification:", error);
+      }
+    } else if (patch.status === "cancelled") {
+      // 공동구매 취소: 주최자 -5점
+      try {
+        await UserService.updateTrustScore(oldPost.authorId, -5);
+      } catch (error) {
+        console.error("Failed to update trust score for author:", error);
+      }
+
+      // 공동구매 취소 알림 생성 (참여자 + 관심 등록자)
+      try {
+        const participants = await PostParticipantRepo.findByPostId(id);
+        const participantUserIds = participants.map((p) => p.userId);
+
+        // 관심 등록자 목록 가져오기
+        const { FavoriteRepo } = await import("../repos/FavoriteRepo");
+        const favorites = await FavoriteRepo.findByPostId(id);
+        const favoriteUserIds = favorites.map((f) => f.userId);
+
+        // 중복 제거
+        const allUserIds = [
+          ...new Set([...participantUserIds, ...favoriteUserIds]),
+        ];
+
+        if (allUserIds.length > 0) {
+          await NotificationService.createPostCancelledNotification(
+            id,
+            allUserIds
+          );
+        }
+      } catch (error) {
+        console.error("Failed to create cancellation notification:", error);
+      }
+    }
     }
 
     return newPost;
@@ -235,6 +330,7 @@ export const PostParticipantService = {
   /**
    * 공동구매 참여
    * - 참여 후 currentQuantity 업데이트
+   * - 주최자에게 새 참여자 알림 생성
    */
   async joinPost(postId: string, userId: string) {
     // 참여 처리
@@ -250,6 +346,17 @@ export const PostParticipantService = {
       { where: { id: postId } }
     );
 
+    // 주최자에게 새 참여자 알림 생성
+    try {
+      await NotificationService.createNewParticipantNotification(
+        postId,
+        userId
+      );
+    } catch (error) {
+      // 알림 생성 실패해도 참여는 성공으로 처리
+      console.error("Failed to create notification:", error);
+    }
+
     return participant;
   },
 
@@ -257,6 +364,7 @@ export const PostParticipantService = {
    * 참여 취소
    * - 취소 후 currentQuantity 업데이트
    * - 참여자 신뢰점수 -3점
+   * - 주최자에게 참여자 취소 알림 생성
    */
   async leavePost(postId: string, userId: string) {
     await PostParticipantRepo.delete(postId, userId);
@@ -274,6 +382,17 @@ export const PostParticipantService = {
     } catch (error) {
       // 신뢰점수 업데이트 실패해도 참여 취소는 성공으로 처리
       console.error("Failed to update trust score for participant:", error);
+    }
+
+    // 주최자에게 참여자 취소 알림 생성
+    try {
+      await NotificationService.createParticipantCancelNotification(
+        postId,
+        userId
+      );
+    } catch (error) {
+      // 알림 생성 실패해도 참여 취소는 성공으로 처리
+      console.error("Failed to create notification:", error);
     }
   },
 

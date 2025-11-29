@@ -174,6 +174,16 @@ const options: swaggerJsdoc.Options = {
               description: "이미지 URL 배열",
               example: ["https://example.com/image.jpg"],
             },
+            favoriteCount: {
+              type: "integer",
+              description: "관심 등록 수",
+              example: 12,
+            },
+            isFavorite: {
+              type: "boolean",
+              description: "현재 사용자의 관심 등록 여부 (로그인한 사용자 기준)",
+              example: true,
+            },
             createdAt: {
               type: "string",
               format: "date-time",
@@ -289,6 +299,109 @@ const options: swaggerJsdoc.Options = {
                   type: "string",
                 },
               },
+            },
+            createdAt: {
+              type: "string",
+              format: "date-time",
+              description: "생성일시",
+            },
+            updatedAt: {
+              type: "string",
+              format: "date-time",
+              description: "수정일시",
+            },
+          },
+        },
+        Notification: {
+          type: "object",
+          required: ["id", "userId", "type", "title", "message", "isRead"],
+          properties: {
+            id: {
+              type: "string",
+              format: "uuid",
+              description: "알림 UUID",
+              example: "123e4567-e89b-12d3-a456-426614174000",
+            },
+            userId: {
+              type: "string",
+              format: "uuid",
+              description: "사용자 UUID",
+              example: "a87522bd-bc79-47b0-a73f-46ea4068a158",
+            },
+            type: {
+              type: "string",
+              enum: [
+                "new_participant",
+                "participant_cancel",
+                "deadline_soon",
+                "post_completed",
+                "post_cancelled",
+                "favorite_deadline",
+                "favorite_completed",
+              ],
+              description: "알림 타입",
+              example: "new_participant",
+            },
+            title: {
+              type: "string",
+              description: "알림 제목",
+              example: "새로운 참여자",
+            },
+            message: {
+              type: "string",
+              description: "알림 메시지",
+              example: "호빵 공동구매에 새로운 참여자가 있습니다.",
+            },
+            postId: {
+              type: "string",
+              format: "uuid",
+              nullable: true,
+              description: "게시글 UUID",
+              example: "123e4567-e89b-12d3-a456-426614174000",
+            },
+            isRead: {
+              type: "boolean",
+              description: "읽음 여부",
+              example: false,
+            },
+            createdAt: {
+              type: "string",
+              format: "date-time",
+              description: "생성일시",
+            },
+            updatedAt: {
+              type: "string",
+              format: "date-time",
+              description: "수정일시",
+            },
+          },
+        },
+        Favorite: {
+          type: "object",
+          required: ["id", "userId", "postId"],
+          properties: {
+            id: {
+              type: "string",
+              format: "uuid",
+              description: "관심 UUID",
+              example: "123e4567-e89b-12d3-a456-426614174000",
+            },
+            userId: {
+              type: "string",
+              format: "uuid",
+              description: "사용자 UUID",
+              example: "a87522bd-bc79-47b0-a73f-46ea4068a158",
+            },
+            postId: {
+              type: "string",
+              format: "uuid",
+              description: "게시글 UUID",
+              example: "123e4567-e89b-12d3-a456-426614174000",
+            },
+            post: {
+              type: "object",
+              description: "관심 등록한 게시글 정보",
+              $ref: "#/components/schemas/Post",
             },
             createdAt: {
               type: "string",
