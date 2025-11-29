@@ -1,30 +1,31 @@
 /* src/public/stylesheets/main.css */
 
 :root {
-  /* 당근마켓 스타일 컬러 팔레트 */
-  --carrot-primary: #ff6f0f;
-  --carrot-primary-hover: #ff8a3d;
-  --carrot-primary-light: #fff4ed;
-  
+  /* 검정색 기반 컬러 팔레트 */
+  --primary: #1a1a1a;
+  --primary-hover: #2d2d2d;
+  --primary-light: #f5f5f5;
+  --primary-dark: #0d0d0d;
+
   --white: #ffffff;
-  --gray-50: #f8f9fa;
-  --gray-100: #f1f3f5;
-  --gray-200: #e9ecef;
-  --gray-300: #dee2e6;
-  --gray-400: #ced4da;
-  --gray-500: #adb5bd;
-  --gray-600: #868e96;
-  --gray-700: #495057;
-  --gray-800: #343a40;
-  --gray-900: #212529;
+  --gray-50: #fafafa;
+  --gray-100: #f5f5f5;
+  --gray-200: #e5e5e5;
+  --gray-300: #d4d4d4;
+  --gray-400: #a3a3a3;
+  --gray-500: #737373;
+  --gray-600: #525252;
+  --gray-700: #404040;
+  --gray-800: #262626;
+  --gray-900: #171717;
 
-  --text-primary: #212529;
-  --text-secondary: #495057;
-  --text-tertiary: #868e96;
-  --text-disabled: #ced4da;
+  --text-primary: #171717;
+  --text-secondary: #404040;
+  --text-tertiary: #737373;
+  --text-disabled: #a3a3a3;
 
-  --border-light: #e9ecef;
-  --border-medium: #dee2e6;
+  --border-light: #e5e5e5;
+  --border-medium: #d4d4d4;
 
   --success: #00c73c;
   --warning: #ffa011;
@@ -41,9 +42,9 @@
   --radius-lg: 12px;
   --radius-xl: 16px;
 
-  --font-sans: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard Variable", 
-    Pretendard, Roboto, "Noto Sans KR", "Segoe UI", "Malgun Gothic", "Apple Color Emoji", 
-    "Segoe UI Emoji", sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+    "Pretendard Variable", Pretendard, Roboto, "Noto Sans KR", "Segoe UI",
+    "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
 }
 
 *,
@@ -86,19 +87,19 @@ img {
 .navbar-brand {
   font-weight: 700;
   font-size: 1.25rem;
-  color: var(--carrot-primary) !important;
+  color: var(--primary) !important;
   letter-spacing: -0.02em;
   text-decoration: none;
   transition: color 0.2s ease;
 }
 
 .navbar-brand:hover {
-  color: var(--carrot-primary-hover) !important;
+  color: var(--primary-hover) !important;
 }
 
 .brand-text {
   font-weight: 700;
-  color: var(--carrot-primary);
+  color: var(--primary);
 }
 
 .nav-link {
@@ -124,14 +125,14 @@ img {
 }
 
 .nav-link.active::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
   width: 20px;
   height: 2px;
-  background-color: var(--carrot-primary);
+  background-color: var(--primary);
   border-radius: 1px;
 }
 
@@ -143,7 +144,6 @@ img {
 .navbar-toggler:focus {
   box-shadow: none;
 }
-
 
 .app-main {
   margin-top: 0;
@@ -238,19 +238,69 @@ img {
 }
 
 .highlight-banner {
-  background: linear-gradient(110deg, var(--black-soft), var(--accent-strong));
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border: 1px solid var(--border-light);
   border-radius: var(--radius-lg);
-  padding: 20px 24px;
-  color: #fff;
-  box-shadow: var(--shadow-card);
+  padding: 2rem;
+  box-shadow: var(--shadow-md);
+  position: relative;
+  overflow: hidden;
+}
+
+.highlight-banner::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(
+    90deg,
+    var(--primary) 0%,
+    var(--primary-hover) 100%
+  );
 }
 
 #user-info-section {
-  background: var(--neutral-25);
-  border: 1px solid var(--border-subtle);
+  background: var(--white);
+  border: 1px solid var(--border-light);
   border-radius: var(--radius-lg);
-  padding: 20px 24px;
-  box-shadow: var(--shadow-soft);
+  padding: 0;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+}
+
+#user-info-section .highlight-banner {
+  margin: 0;
+  box-shadow: none;
+  border: none;
+}
+
+#user-info-section h5 {
+  color: var(--text-primary);
+  font-weight: 700;
+  font-size: 1.5rem;
+  margin-bottom: 0.75rem;
+  background: linear-gradient(
+    135deg,
+    var(--primary) 0%,
+    var(--primary-hover) 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+#user-info-section .welcome-message {
+  font-size: 1.125rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+
+#user-info-section small {
+  color: var(--text-tertiary);
+  font-size: 0.875rem;
 }
 
 .chip {
@@ -405,8 +455,8 @@ img {
 
 .form-control:focus,
 .form-select:focus {
-  border-color: var(--carrot-primary);
-  box-shadow: 0 0 0 3px rgba(255, 111, 15, 0.1);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.1);
   outline: none;
 }
 
@@ -464,7 +514,7 @@ img {
 }
 
 .progress-bar {
-  background-color: var(--carrot-primary);
+  background-color: var(--primary);
   border-radius: var(--radius-sm);
 }
 
@@ -596,7 +646,7 @@ img {
 
 .message-item.own-message {
   margin-left: auto;
-  background: var(--carrot-primary);
+  background: var(--primary);
   color: var(--white);
 }
 
@@ -670,4 +720,3 @@ img {
     margin-top: 0.5rem;
   }
 }
-

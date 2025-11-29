@@ -10,10 +10,7 @@ export const PostRepo = {
    * 공동구매 상품 생성
    * 이미지 URL 배열을 받아서 post_images 테이블에 저장
    */
-  async create(
-    data: PostCreationAttributes,
-    imageUrls: string[] = [],
-  ) {
+  async create(data: PostCreationAttributes, imageUrls: string[] = []) {
     try {
       const post = await PostModel.create(data);
 
@@ -24,7 +21,7 @@ export const PostRepo = {
             postId: post.id,
             imageUrl: url,
             sortOrder: index,
-          })),
+          }))
         );
       }
 
@@ -67,8 +64,21 @@ export const PostRepo = {
    */
   async list(limit = 20, offset = 0, category?: string | null) {
     const whereClause: any = {};
-    if (category) {
-      whereClause.category = category;
+    // category가 제공되고 빈 문자열이 아닐 때만 필터링
+    if (
+      category &&
+      category !== null &&
+      category !== undefined &&
+      String(category).trim() !== ""
+    ) {
+      const categoryValue = String(category).trim();
+      whereClause.category = categoryValue;
+      console.log("PostRepo.list - 카테고리 필터링:", {
+        요청카테고리: categoryValue,
+        whereClause카테고리: whereClause.category,
+      });
+    } else {
+      console.log("PostRepo.list - 전체 조회 (카테고리 없음)");
     }
 
     const posts = await PostModel.findAll({
@@ -86,7 +96,17 @@ export const PostRepo = {
       offset,
     });
 
-    return posts.map((p) => p.get());
+    const result = posts.map((p) => p.get());
+
+    // 디버깅: 조회된 게시글들의 카테고리 확인
+    if (whereClause.category) {
+      console.log(
+        "PostRepo.list - 조회된 게시글 카테고리:",
+        result.map((p) => ({ id: p.id, title: p.title, category: p.category }))
+      );
+    }
+
+    return result;
   },
 
   /**
@@ -135,7 +155,7 @@ export const PostRepo = {
             postId: id,
             imageUrl: url,
             sortOrder: index,
-          })),
+          }))
         );
       }
     }

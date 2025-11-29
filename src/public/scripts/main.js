@@ -335,26 +335,68 @@ function updatePostCardForAuthor(postId, isAuthor) {
  */
 async function loadPosts(category = null) {
   try {
-    const templateElement = document.getElementById("posts-template");
-    const gridElement = document.getElementById("posts-grid");
+    // DOM 요소를 여러 번 시도해서 찾기
+    let templateElement = document.getElementById("posts-template");
+    let gridElement = document.getElementById("posts-grid");
+
+    // DOM 요소가 없으면 최대 10번까지 재시도 (더 긴 대기 시간)
+    let retryCount = 0;
+    const maxRetries = 10;
+
+    while ((!templateElement || !gridElement) && retryCount < maxRetries) {
+      console.warn(
+        `DOM 요소를 찾지 못함. 재시도 ${retryCount + 1}/${maxRetries}...`,
+        {
+          templateElement: !!templateElement,
+          gridElement: !!gridElement,
+        }
+      );
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      templateElement = document.getElementById("posts-template");
+      gridElement = document.getElementById("posts-grid");
+      retryCount++;
+    }
 
     // DOM 요소가 존재하는지 확인
     if (!templateElement || !gridElement) {
-      console.error("Required DOM elements not found");
+      console.error("Required DOM elements not found after retries", {
+        templateElement: !!templateElement,
+        gridElement: !!gridElement,
+        allScripts: document.querySelectorAll("script").length,
+        allTemplates: document.querySelectorAll("[id*='template']").length,
+        postsGridExists: !!document.getElementById("posts-grid"),
+      });
+      showToast(
+        "페이지 요소를 찾을 수 없습니다. 페이지를 새로고침해주세요.",
+        "error"
+      );
       return;
     }
 
-    const url = category
-      ? `${API_BASE_POSTS}?category=${category}`
-      : API_BASE_POSTS;
+    console.log("DOM 요소 찾기 성공:", {
+      templateElement: !!templateElement,
+      gridElement: !!gridElement,
+    });
+
+    const url =
+      category && category !== null && category !== "" && category !== undefined
+        ? `${API_BASE_POSTS}?category=${encodeURIComponent(category)}`
+        : API_BASE_POSTS;
+
+    console.log("loadPosts 호출, category:", category, "URL:", url);
     const response = await fetch(url);
     if (!response.ok) {
+      console.error("API 응답 오류:", response.status, response.statusText);
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const posts = await response.json();
+    console.log("받은 게시글 수:", posts.length, "카테고리:", category);
 
     ensureHandlebarsHelpers();
     const template = Handlebars.compile(templateElement.innerHTML);
+
+    // 백엔드에서 이미 필터링된 결과를 받았으므로 그대로 사용
+    console.log("표시할 게시글 수:", posts.length);
     gridElement.innerHTML = template({ posts });
 
     // 각 게시글에 대해 작성자/참여 여부 확인 및 UI 업데이트
@@ -377,11 +419,11 @@ async function loadPosts(category = null) {
       );
       for (const post of normalUserPosts) {
         updatePostCardForAuthor(post.id, false);
-        
+
         if (post.status === "open") {
           const isParticipant = await checkParticipationStatus(post.id);
           updatePostCardParticipationStatus(post.id, isParticipant);
-          
+
           // 관심 여부 확인
           loadFavoriteStatus(post.id, currentUserId);
         }
@@ -751,7 +793,15 @@ if (createPostForm) {
 
     const deadlineISO = deadline ? new Date(deadline).toISOString() : null;
 
-    const category = document.getElementById("post-category")?.value || null;
+    // 카테고리 값 가져오기 및 정규화 (빈 문자열을 null로)
+    const categoryRaw = document.getElementById("post-category")?.value;
+    const category =
+      categoryRaw && categoryRaw.trim() !== "" ? categoryRaw.trim() : null;
+
+    console.log("상품 등록 - 카테고리:", {
+      원본값: categoryRaw,
+      정규화됨: category,
+    });
 
     const postData = {
       post: {
@@ -893,7 +943,7 @@ async function openPostDetail(postId) {
         cancelled: [],
       };
       const availableStatuses = statusOptions[post.status] || [];
-      
+
       let statusChangeSection = "";
       if (availableStatuses.length > 0) {
         const statusLabels = {
@@ -967,9 +1017,9 @@ async function openPostDetail(postId) {
           ? "btn-danger"
           : "btn-outline-danger";
         const favoriteBtnText = isFavorite
-          ? '<span>❤️</span> 관심 해제'
-          : '<span>🤍</span> 관심 등록';
-        
+          ? "<span>❤️</span> 관심 해제"
+          : "<span>🤍</span> 관심 등록";
+
         actionSection = `
           <div class="border-top pt-3 mt-3">
             <button class="btn btn-success w-100 fw-bold join-post-btn-detail mb-2" data-post-id="${post.id}" style="font-size: 1.1rem; padding: 12px;">
@@ -1004,8 +1054,16 @@ async function openPostDetail(postId) {
           <p><strong>상태:</strong> ${statusBadge}</p>
           <p><strong>최소 인원:</strong> ${post.minParticipants}명</p>
           <p><strong>현재 인원:</strong> ${post.currentQuantity}명</p>
-          ${post.favoriteCount !== undefined ? `<p><strong>관심 수:</strong> ${post.favoriteCount}개</p>` : ""}
-          ${post.category ? `<p><strong>카테고리:</strong> ${post.category}</p>` : ""}
+          ${
+            post.favoriteCount !== undefined
+              ? `<p><strong>관심 수:</strong> ${post.favoriteCount}개</p>`
+              : ""
+          }
+          ${
+            post.category
+              ? `<p><strong>카테고리:</strong> ${post.category}</p>`
+              : ""
+          }
         </div>
         <div class="col-md-6">
           <p><strong>마감일:</strong> ${formatDate(post.deadline)}</p>
@@ -1413,11 +1471,7 @@ document.addEventListener("click", async (e) => {
     handleLeavePost(postId, userId, e.target, true);
   }
 
-  // 카테고리 필터 버튼
-  if (e.target.classList.contains("category-filter-btn")) {
-    const category = e.target.getAttribute("data-category");
-    handleCategoryFilter(category);
-  }
+  // 카테고리 필터 버튼은 이벤트 위임으로 처리 (DOMContentLoaded에서 설정됨)
 
   // 관심 등록/해제 버튼
   if (e.target.classList.contains("favorite-btn")) {
@@ -1481,18 +1535,41 @@ document.addEventListener("click", async (e) => {
 // ============================================================================
 // 카테고리 필터링 기능
 // ============================================================================
+// 카테고리 필터 상태 관리
 let selectedCategory = null;
 
 function handleCategoryFilter(category) {
-  selectedCategory = category;
-  loadPosts(category);
-  
+  console.log("카테고리 필터 클릭:", category);
+
+  // 빈 문자열을 undefined로 변환 (전체 카테고리)
+  const filterCategory =
+    category === "" || category === null || category === undefined
+      ? undefined
+      : String(category).trim();
+  selectedCategory = filterCategory;
+
+  console.log("필터 카테고리:", filterCategory);
+  const apiUrl = filterCategory
+    ? `${API_BASE_POSTS}?category=${encodeURIComponent(filterCategory)}`
+    : API_BASE_POSTS;
+  console.log("API 호출 URL:", apiUrl);
+
+  // 게시글 로드
+  loadPosts(filterCategory);
+
   // 카테고리 버튼 활성화 상태 업데이트
   document.querySelectorAll(".category-filter-btn").forEach((btn) => {
-    if (btn.getAttribute("data-category") === category) {
-      btn.style.background = "var(--carrot-primary-light)";
-      btn.style.borderColor = "var(--carrot-primary)";
-      btn.style.color = "var(--carrot-primary)";
+    const btnCategory = btn.getAttribute("data-category");
+    const isActive =
+      (filterCategory === undefined &&
+        (btnCategory === "" || btnCategory === null)) ||
+      (filterCategory !== undefined &&
+        String(btnCategory) === String(filterCategory));
+
+    if (isActive) {
+      btn.style.background = "var(--primary)";
+      btn.style.borderColor = "var(--primary)";
+      btn.style.color = "var(--white)";
       btn.style.fontWeight = "600";
     } else {
       btn.style.background = "var(--white)";
@@ -1549,11 +1626,11 @@ function updateFavoriteButton(postId, isFavorite) {
   );
   if (favoriteBtn) {
     if (isFavorite) {
-      favoriteBtn.innerHTML = '<span>❤️</span> 관심 해제';
+      favoriteBtn.innerHTML = "<span>❤️</span> 관심 해제";
       favoriteBtn.classList.remove("btn-outline-danger");
       favoriteBtn.classList.add("btn-danger");
     } else {
-      favoriteBtn.innerHTML = '<span>🤍</span> 관심 등록';
+      favoriteBtn.innerHTML = "<span>🤍</span> 관심 등록";
       favoriteBtn.classList.remove("btn-danger");
       favoriteBtn.classList.add("btn-outline-danger");
     }
@@ -1618,19 +1695,24 @@ function renderNotifications() {
   if (!container) return;
 
   if (notifications.length === 0) {
-    container.innerHTML = '<div class="text-center text-muted p-3">알림이 없습니다.</div>';
+    container.innerHTML =
+      '<div class="text-center text-muted p-3">알림이 없습니다.</div>';
     return;
   }
 
   const html = notifications
     .map(
       (notif) => `
-    <div class="notification-item p-3 border-bottom ${notif.isRead ? "" : "bg-light"}" data-notification-id="${notif.id}">
+    <div class="notification-item p-3 border-bottom ${
+      notif.isRead ? "" : "bg-light"
+    }" data-notification-id="${notif.id}">
       <div class="d-flex justify-content-between align-items-start">
         <div class="flex-grow-1">
           <h6 class="mb-1">${notif.title}</h6>
           <p class="mb-1 small text-muted">${notif.message}</p>
-          <small class="text-muted">${new Date(notif.createdAt).toLocaleString("ko-KR")}</small>
+          <small class="text-muted">${new Date(notif.createdAt).toLocaleString(
+            "ko-KR"
+          )}</small>
         </div>
         ${!notif.isRead ? '<span class="badge bg-primary">새</span>' : ""}
       </div>
@@ -1709,8 +1791,10 @@ async function updatePostStatus(postId, newStatus, authorId) {
 // ============================================================================
 async function loadFavorites(userId) {
   try {
-    const response = await fetch(`${API_BASE_USERS}/${userId}/favorites?limit=50&offset=0`);
-    
+    const response = await fetch(
+      `${API_BASE_USERS}/${userId}/favorites?limit=50&offset=0`
+    );
+
     if (!response.ok) {
       throw new Error("관심목록을 불러오는 데 실패했습니다.");
     }
@@ -1753,10 +1837,10 @@ async function handleRemoveFavorite(postId, userId) {
     }
 
     showToast("관심 해제되었습니다.", "success");
-    
+
     // 관심목록 다시 로드
     await loadFavorites(userId);
-    
+
     // 메인 페이지의 관심 버튼 상태도 업데이트
     if (currentUser && currentUser.id === userId) {
       loadFavoriteStatus(postId, userId);
@@ -1811,7 +1895,6 @@ async function uploadProfileImage(file, userId) {
   }
 }
 
-
 // 페이지 로드 시 초기화
 // 관심목록 모달 이벤트 리스너
 document.addEventListener("DOMContentLoaded", () => {
@@ -1822,7 +1905,8 @@ document.addEventListener("DOMContentLoaded", () => {
         loadFavorites(currentUser.id);
       } else {
         showToast("로그인이 필요합니다.", "warning");
-        const modalInstance = window.bootstrap?.Modal?.getInstance(favoritesModal);
+        const modalInstance =
+          window.bootstrap?.Modal?.getInstance(favoritesModal);
         if (modalInstance) {
           modalInstance.hide();
         }
@@ -1833,5 +1917,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
 window.addEventListener("DOMContentLoaded", () => {
   loadUserFromStorage();
-  loadPosts();
+
+  // DOM이 완전히 로드될 때까지 약간의 지연 (template 요소가 로드되도록)
+  setTimeout(() => {
+    // 카테고리 필터 버튼 이벤트 리스너 (이벤트 위임) - 먼저 설정
+    const categoryContainer = document.getElementById(
+      "category-filter-container"
+    );
+    if (categoryContainer) {
+      categoryContainer.addEventListener("click", (e) => {
+        if (e.target.classList.contains("category-filter-btn")) {
+          e.preventDefault();
+          e.stopPropagation();
+          const category = e.target.getAttribute("data-category");
+          console.log("버튼 클릭됨, 카테고리:", category);
+          handleCategoryFilter(category);
+        }
+      });
+    } else {
+      console.error("category-filter-container를 찾을 수 없습니다!");
+    }
+
+    // 초기 로드 및 카테고리 필터 초기화 (전체 버튼 활성화)
+    handleCategoryFilter(undefined);
+  }, 200);
 });

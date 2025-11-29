@@ -46,7 +46,7 @@ const postRouter = Router();
  *         schema:
  *           type: string
  *           enum: [food, daily, beauty, electronics, school, freemarket]
- *         description: 카테고리 필터 (food: 먹거리, daily: 일상용품, beauty: 뷰티·패션, electronics: 전자기기, school: 학용품, freemarket: 프리마켓)
+ *         description: "카테고리 필터 (food=먹거리, daily=일상용품, beauty=뷰티·패션, electronics=전자기기, school=학용품, freemarket=프리마켓)"
  *         example: food
  *     responses:
  *       200:
@@ -164,7 +164,7 @@ postRouter.get("/student/:studentId", getPostsByStudentId);
  *                     enum: [food, daily, beauty, electronics, school, freemarket]
  *                     nullable: true
  *                     example: "food"
- *                     description: 카테고리 ID (food: 먹거리, daily: 일상용품, beauty: 뷰티·패션, electronics: 전자기기, school: 학용품, freemarket: 프리마켓)
+ *                     description: "카테고리 ID (food=먹거리, daily=일상용품, beauty=뷰티·패션, electronics=전자기기, school=학용품, freemarket=프리마켓)"
  *                   images:
  *                     type: array
  *                     items:
