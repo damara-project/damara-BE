@@ -44,6 +44,18 @@ function ensureHandlebarsHelpers() {
     return num.toLocaleString("ko-KR");
   });
 
+  Handlebars.registerHelper("categoryName", function (category) {
+    const categoryMap = {
+      food: "먹거리",
+      daily: "일상용품",
+      beauty: "뷰티·패션",
+      electronics: "전자기기",
+      school: "학용품",
+      freemarket: "프리마켓",
+    };
+    return categoryMap[category] || category || "";
+  });
+
   handlebarsHelpersRegistered = true;
 }
 
@@ -1920,25 +1932,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
   // DOM이 완전히 로드될 때까지 약간의 지연 (template 요소가 로드되도록)
   setTimeout(() => {
-    // 카테고리 필터 버튼 이벤트 리스너 (이벤트 위임) - 먼저 설정
-    const categoryContainer = document.getElementById(
-      "category-filter-container"
-    );
-    if (categoryContainer) {
-      categoryContainer.addEventListener("click", (e) => {
-        if (e.target.classList.contains("category-filter-btn")) {
-          e.preventDefault();
-          e.stopPropagation();
-          const category = e.target.getAttribute("data-category");
-          console.log("버튼 클릭됨, 카테고리:", category);
-          handleCategoryFilter(category);
-        }
-      });
-    } else {
-      console.error("category-filter-container를 찾을 수 없습니다!");
-    }
-
-    // 초기 로드 및 카테고리 필터 초기화 (전체 버튼 활성화)
-    handleCategoryFilter(undefined);
+    // 초기 로드 (카테고리 필터 없이 전체 조회)
+    loadPosts();
   }, 200);
 });

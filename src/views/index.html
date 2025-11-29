@@ -221,102 +221,6 @@
         </h2>
       </div>
 
-      <!-- 카테고리 필터 -->
-      <div class="mb-4">
-        <div class="d-flex flex-wrap gap-2" id="category-filter-container">
-          <button
-            type="button"
-            class="btn btn-sm category-filter-btn"
-            data-category=""
-            style="
-              border: 1px solid var(--border-medium);
-              color: var(--text-secondary);
-              background: var(--white);
-              transition: all 0.2s ease;
-            "
-          >
-            전체
-          </button>
-          <button
-            type="button"
-            class="btn btn-sm category-filter-btn"
-            data-category="food"
-            style="
-              border: 1px solid var(--border-medium);
-              color: var(--text-secondary);
-              background: var(--white);
-              transition: all 0.2s ease;
-            "
-          >
-            먹거리
-          </button>
-          <button
-            type="button"
-            class="btn btn-sm category-filter-btn"
-            data-category="daily"
-            style="
-              border: 1px solid var(--border-medium);
-              color: var(--text-secondary);
-              background: var(--white);
-              transition: all 0.2s ease;
-            "
-          >
-            일상용품
-          </button>
-          <button
-            type="button"
-            class="btn btn-sm category-filter-btn"
-            data-category="beauty"
-            style="
-              border: 1px solid var(--border-medium);
-              color: var(--text-secondary);
-              background: var(--white);
-              transition: all 0.2s ease;
-            "
-          >
-            뷰티·패션
-          </button>
-          <button
-            type="button"
-            class="btn btn-sm category-filter-btn"
-            data-category="electronics"
-            style="
-              border: 1px solid var(--border-medium);
-              color: var(--text-secondary);
-              background: var(--white);
-              transition: all 0.2s ease;
-            "
-          >
-            전자기기
-          </button>
-          <button
-            type="button"
-            class="btn btn-sm category-filter-btn"
-            data-category="school"
-            style="
-              border: 1px solid var(--border-medium);
-              color: var(--text-secondary);
-              background: var(--white);
-              transition: all 0.2s ease;
-            "
-          >
-            학용품
-          </button>
-          <button
-            type="button"
-            class="btn btn-sm category-filter-btn"
-            data-category="freemarket"
-            style="
-              border: 1px solid var(--border-medium);
-              color: var(--text-secondary);
-              background: var(--white);
-              transition: all 0.2s ease;
-            "
-          >
-            프리마켓
-          </button>
-        </div>
-      </div>
       <div class="alert alert-info border-0 shadow-sm mb-4" role="alert">
         목록이 보이지 않거나 업데이트되지 않는 경우 브라우저 새로고침(F5)을 한
         번 눌러 주세요.
@@ -341,7 +245,14 @@
                   </div>
                 {{/if}}
                 <div class="card-body d-flex flex-column">
-                  <h5 class="card-title">{{title}}</h5>
+                  <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h5 class="card-title mb-0">{{title}}</h5>
+                    {{#if category}}
+                      <span class="badge category-badge" style="background-color: var(--primary); color: white; font-size: 0.75rem; padding: 0.25rem 0.5rem;">
+                        {{categoryName category}}
+                      </span>
+                    {{/if}}
+                  </div>
                   <p class="card-text text-muted small flex-grow-1">
                     {{truncate content 50}}
                   </p>
