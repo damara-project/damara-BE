@@ -11,6 +11,7 @@ import {
   getUnreadMessageCount,
   deleteChatRoom,
   deleteMessage,
+  getChatRoomsByUserId,
 } from "../../controllers/chat.controller";
 
 const chatRouter = Router();
@@ -51,6 +52,111 @@ const chatRouter = Router();
  *         description: Post를 찾을 수 없음
  */
 chatRouter.post("/rooms", createChatRoom);
+
+/**
+ * @swagger
+ * /api/chat/rooms/user/{userId}:
+ *   get:
+ *     summary: 사용자가 참여한 채팅방 목록 조회
+ *     tags: [Chat]
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 사용자 UUID
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *         description: 조회 개수
+ *       - in: query
+ *         name: offset
+ *         schema:
+ *           type: integer
+ *           default: 0
+ *         description: 페이지네이션 오프셋
+ *     responses:
+ *       200:
+ *         description: 채팅방 목록 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 chatRooms:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                         format: uuid
+ *                       postId:
+ *                         type: string
+ *                         format: uuid
+ *                       post:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: string
+ *                             format: uuid
+ *                           title:
+ *                             type: string
+ *                           authorId:
+ *                             type: string
+ *                             format: uuid
+ *                           images:
+ *                             type: array
+ *                             items:
+ *                               type: string
+ *                       participants:
+ *                         type: array
+ *                         items:
+ *                           type: object
+ *                           properties:
+ *                             userId:
+ *                               type: string
+ *                               format: uuid
+ *                             nickname:
+ *                               type: string
+ *                             avatarUrl:
+ *                               type: string
+ *                               nullable: true
+ *                       lastMessage:
+ *                         type: object
+ *                         nullable: true
+ *                         properties:
+ *                           content:
+ *                             type: string
+ *                           senderId:
+ *                             type: string
+ *                             format: uuid
+ *                           createdAt:
+ *                             type: string
+ *                             format: date-time
+ *                       unreadCount:
+ *                         type: integer
+ *                       createdAt:
+ *                         type: string
+ *                         format: date-time
+ *                       updatedAt:
+ *                         type: string
+ *                         format: date-time
+ *                 total:
+ *                   type: integer
+ *                 limit:
+ *                   type: integer
+ *                 offset:
+ *                   type: integer
+ *       404:
+ *         description: 사용자를 찾을 수 없음
+ */
+// GET /api/chat/rooms/user/:userId - 사용자가 참여한 채팅방 목록 조회
+chatRouter.get("/rooms/user/:userId", getChatRoomsByUserId);
 
 /**
  * @swagger

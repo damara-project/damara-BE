@@ -73,4 +73,48 @@ export const ChatRoomRepo = {
       throw new RouteError(HttpStatusCodes.NOT_FOUND, "CHAT_ROOM_NOT_FOUND");
     }
   },
+
+  /**
+   * 사용자가 참여한 게시글의 채팅방 목록 조회
+   * - PostParticipant를 통해 사용자가 참여한 게시글 찾기
+   * - 각 게시글의 채팅방 찾기
+   */
+  async findByUserId(userId: string, limit = 20, offset = 0) {
+    const { PostParticipantRepo } = await import("./PostParticipantRepo");
+    
+    // 사용자가 참여한 게시글 목록 조회
+    const participants = await PostParticipantRepo.findByUserId(userId);
+    const postIds = participants.map((p) => p.postId);
+
+    if (postIds.length === 0) {
+      return [];
+    }
+
+    // 각 게시글의 채팅방 조회
+    const chatRooms = await ChatRoomModel.findAll({
+      where: {
+        postId: postIds,
+      },
+      include: [
+        {
+          model: PostModel,
+          as: "post",
+          attributes: ["id", "title", "authorId"],
+          include: [
+            {
+              model: (await import("../models/PostImage")).default,
+              as: "images",
+              attributes: ["id", "imageUrl", "sortOrder"],
+              order: [["sortOrder", "ASC"]],
+            },
+          ],
+        },
+      ],
+      order: [["updatedAt", "DESC"]],
+      limit,
+      offset,
+    });
+
+    return chatRooms.map((cr) => cr.get());
+  },
 };
