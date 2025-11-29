@@ -11,12 +11,17 @@ import {
   updatePostSchema,
   UpdatePostReq,
 } from "../routes/common/validation/post-schemas";
+import {
+  updatePostStatusSchema,
+  UpdatePostStatusReq,
+} from "../routes/common/validation/post-status-schemas";
 
 /**
  * 공동구매 상품 전체 목록
- * GET /api/posts?limit&offset
+ * GET /api/posts?limit&offset&category
  *
  * - pagination 기본값은 (20, 0)
+ * - category 쿼리 파라미터로 필터링 가능
  * - Service.listPosts로 위임하여 DB 접근을 추상화
  */
 export async function getAllPosts(
@@ -31,8 +36,11 @@ export async function getAllPosts(
     const offset = req.query.offset
       ? parseInt(req.query.offset as string, 10)
       : 0;
+    const category = req.query.category
+      ? (req.query.category as string)
+      : undefined;
 
-    const posts = await PostService.listPosts(limit, offset);
+    const posts = await PostService.listPosts(limit, offset, category);
 
     res.status(HttpStatusCodes.OK).json(posts);
   } catch (error) {
@@ -107,13 +115,14 @@ export async function createPost(
     const validatedData = parseReq<CreatePostReq>(createPostSchema)(req.body);
     const { post } = validatedData;
 
-    // deadline을 Date 객체로 변환
-    const { images = [], deadline, ...postData } = post;
+    // deadline과 category를 명시적으로 처리
+    const { images = [], deadline, category, ...postData } = post;
 
     const createdPost = await PostService.createPost(
       {
         ...postData,
         deadline: new Date(deadline),
+        category: category || null,
       },
       images
     );
@@ -174,6 +183,45 @@ export async function deletePost(
     await PostService.deletePost(id);
 
     res.status(HttpStatusCodes.NO_CONTENT).send();
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * 게시글 상태 변경
+ * PATCH /api/posts/:id/status
+ * body: { status: "closed" }
+ *
+ * - 작성자만 변경 가능
+ * - 상태 전이 규칙 적용 (선택사항)
+ */
+export async function updatePostStatus(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { id } = req.params;
+    const validatedData = parseReq<UpdatePostStatusReq>(updatePostStatusSchema)(
+      req.body
+    );
+    const { status } = validatedData;
+
+    // Request body에서 authorId 추출 (프론트엔드에서 전달)
+    // 또는 세션/토큰에서 authorId 추출 (인증 시스템 구현 시)
+    const authorId = req.body.authorId || req.headers["x-user-id"] as string;
+
+    if (!authorId) {
+      return res.status(HttpStatusCodes.BAD_REQUEST).json({
+        error: "AUTHOR_ID_REQUIRED",
+        message: "작성자 ID가 필요합니다.",
+      });
+    }
+
+    const updatedPost = await PostService.updatePostStatus(id, status, authorId);
+
+    res.status(HttpStatusCodes.OK).json(updatedPost);
   } catch (error) {
     next(error);
   }

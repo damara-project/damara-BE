@@ -5,6 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>회원 관리</title>
+    <link rel="stylesheet" type="text/css" href="/stylesheets/main.css" />
     <link rel="stylesheet" type="text/css" href="/stylesheets/users.css" />
 
     <!-- Handlebars -->
@@ -25,16 +26,55 @@
   </head>
 
   <!-- Body -->
-  <body>
-    <div class="container mt-4">
-      <h1 class="mb-4">회원 관리</h1>
+  <body class="app-body">
+    <nav class="navbar navbar-expand-lg app-nav shadow-sm sticky-top">
+      <div class="container">
+        <a class="navbar-brand" href="/">
+          <span>🍊</span>
+          다마라
+        </a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNav"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-2">
+            <li class="nav-item">
+              <a class="nav-link" href="/">홈</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/posts">내 상품 관리</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link active" href="/users">회원 목록</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/chat">실시간 채팅</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <main class="app-main container">
+      <div class="users-hero">
+        <h1>회원 관리</h1>
+        <p class="mb-0 text-muted">
+          신규 회원을 등록하거나 모든 유저 목록을 확인하고 수정·삭제할 수 있어요.
+        </p>
+      </div>
 
       <!-- 회원 등록 폼 -->
-      <div class="card mb-4">
-        <div class="card-header">
-          <h3>회원 등록</h3>
+      <section class="section-block mb-4">
+        <div class="section-header">
+          <p class="section-subtitle mb-1">STEP 1</p>
+          <h2 class="section-title">회원 등록</h2>
         </div>
-        <div class="card-body">
+        <div>
           <form id="create-user-form">
             <div class="mb-3">
               <label for="user-email" class="form-label">이메일</label>
@@ -111,148 +151,157 @@
               />
             </div>
 
-            <button type="submit" class="btn btn-primary">등록</button>
+            <div class="d-flex justify-content-end">
+              <button type="submit" class="btn btn-primary px-4">등록</button>
+            </div>
           </form>
         </div>
-      </div>
+      </section>
 
       <!-- 회원 목록 -->
-      <div class="card">
-        <div
-          class="card-header d-flex justify-content-between align-items-center"
-        >
-          <h3 class="mb-0">회원 목록</h3>
-          <button id="refresh-users-btn" class="btn btn-sm btn-outline-primary">
+      <section class="section-block">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+          <div>
+            <p class="section-subtitle mb-1">STEP 2</p>
+            <h2 class="section-title">회원 목록</h2>
+          </div>
+          <button id="refresh-users-btn" class="btn btn-outline-primary">
             새로고침
           </button>
         </div>
-        <div class="card-body">
-          <div id="all-users-anchor"></div>
-          <script id="all-users-template" type="text/x-handlebars-template">
-            {{#each users}}
-              <div class="user-item mb-4 p-3 border rounded">
-                <div class="normal-view">
-                  <div class="row">
-                    {{#if avatarUrl}}
-                      <div class="col-md-2">
-                        <img
-                          src="{{avatarUrl}}"
-                          alt="{{nickname}}"
-                          class="img-fluid rounded-circle"
-                          style="width: 100px; height: 100px; object-fit: cover;"
-                        />
+        <div id="all-users-anchor"></div>
+        <script id="all-users-template" type="text/x-handlebars-template">
+          {{#each users}}
+            <div class="user-item">
+              <div class="normal-view">
+                <div class="row">
+                  {{#if avatarUrl}}
+                    <div class="col-md-2 mb-3 mb-md-0 d-flex align-items-center">
+                      <img
+                        src="{{avatarUrl}}"
+                        alt="{{nickname}}"
+                        style="width: 96px; height: 96px; object-fit: cover;"
+                      />
+                    </div>
+                  {{/if}}
+                  <div class="{{#if avatarUrl}}col-md-10{{else}}col-12{{/if}}">
+                    <h4>{{nickname}}</h4>
+                    <div class="row">
+                      <div class="col-md-6">
+                        <p><strong>이메일:</strong> {{email}}</p>
+                        {{#if department}}
+                          <p><strong>학과:</strong> {{department}}</p>
+                        {{/if}}
+                        {{#if studentId}}
+                          <p><strong>학번:</strong> {{studentId}}</p>
+                        {{/if}}
                       </div>
-                    {{/if}}
-                    <div class="{{#if avatarUrl}}col-md-10{{else}}col-12{{/if}}">
-                      <h4>{{nickname}}</h4>
-                      <div class="row">
-                        <div class="col-md-6">
-                          <p><strong>이메일:</strong> {{email}}</p>
-                          {{#if department}}
-                            <p><strong>학과:</strong> {{department}}</p>
-                          {{/if}}
-                          {{#if studentId}}
-                            <p><strong>학번:</strong> {{studentId}}</p>
-                          {{/if}}
-                        </div>
-                        <div class="col-md-6">
-                          <p><strong>ID:</strong> <small class="text-muted">{{id}}</small></p>
-                          <p><strong>가입일:</strong> {{formatDate createdAt}}</p>
-                          <p><strong>수정일:</strong> {{formatDate updatedAt}}</p>
-                        </div>
+                      <div class="col-md-6">
+                        <p><strong>ID:</strong> <small class="text-muted">{{id}}</small></p>
+                        <p><strong>가입일:</strong> {{formatDate createdAt}}</p>
+                        <p><strong>수정일:</strong> {{formatDate updatedAt}}</p>
                       </div>
-                      <div class="mt-2">
-                        <button
-                          type="button"
-                          class="btn btn-sm btn-primary edit-user-btn"
-                          data-user-id="{{id}}"
-                        >
-                          수정
-                        </button>
-                        <button
-                          type="button"
-                          class="btn btn-sm btn-danger delete-user-btn"
-                          data-user-id="{{id}}"
-                        >
-                          삭제
-                        </button>
-                      </div>
+                    </div>
+                    <div class="mt-3 d-flex gap-2">
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-primary edit-user-btn"
+                        data-user-id="{{id}}"
+                      >
+                        수정
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-outline-danger delete-user-btn"
+                        data-user-id="{{id}}"
+                      >
+                        삭제
+                      </button>
                     </div>
                   </div>
                 </div>
+              </div>
 
-                <div class="edit-view" style="display: none;">
-                  <form class="edit-user-form" data-user-id="{{id}}">
-                    <div class="mb-3">
-                      <label class="form-label">이메일</label>
-                      <input
-                        type="email"
-                        class="form-control user-email-edit"
-                        value="{{email}}"
-                        required
-                      />
-                    </div>
-                    <div class="mb-3">
-                      <label class="form-label">비밀번호 (8자 이상, 변경하려면 입력)</label>
-                      <input
-                        type="password"
-                        class="form-control user-password-hash-edit"
-                        placeholder="비밀번호 변경 시에만 입력"
-                        minlength="8"
-                      />
-                    </div>
-                    <div class="mb-3">
-                      <label class="form-label">닉네임</label>
+              <div class="edit-view mt-3" style="display: none;">
+                <form class="edit-user-form" data-user-id="{{id}}">
+                  <div class="mb-3">
+                    <label class="form-label">이메일</label>
+                    <input
+                      type="email"
+                      class="form-control user-email-edit"
+                      value="{{email}}"
+                      required
+                    />
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">비밀번호 (8자 이상, 변경하려면 입력)</label>
+                    <input
+                      type="password"
+                      class="form-control user-password-hash-edit"
+                      placeholder="비밀번호 변경 시에만 입력"
+                      minlength="8"
+                    />
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">닉네임</label>
+                    <input
+                      type="text"
+                      class="form-control user-nickname-edit"
+                      value="{{nickname}}"
+                      minlength="2"
+                      required
+                    />
+                  </div>
+                  <div class="row">
+                    <div class="col-md-6 mb-3">
+                      <label class="form-label">학과</label>
                       <input
                         type="text"
-                        class="form-control user-nickname-edit"
-                        value="{{nickname}}"
-                        minlength="2"
-                        required
+                        class="form-control user-department-edit"
+                        value="{{department}}"
                       />
                     </div>
-                    <div class="row">
-                      <div class="col-md-6 mb-3">
-                        <label class="form-label">학과</label>
-                        <input
-                          type="text"
-                          class="form-control user-department-edit"
-                          value="{{department}}"
-                        />
-                      </div>
-                      <div class="col-md-6 mb-3">
-                        <label class="form-label">학번</label>
-                        <input
-                          type="text"
-                          class="form-control user-student-id-edit"
-                          value="{{studentId}}"
-                        />
-                      </div>
-                    </div>
-                    <div class="mb-3">
-                      <label class="form-label">프로필 이미지 URL</label>
+                    <div class="col-md-6 mb-3">
+                      <label class="form-label">학번</label>
                       <input
-                        type="url"
-                        class="form-control user-avatar-url-edit"
-                        value="{{avatarUrl}}"
+                        type="text"
+                        class="form-control user-student-id-edit"
+                        value="{{studentId}}"
                       />
                     </div>
-                    <button type="submit" class="btn btn-primary btn-sm">저장</button>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">프로필 이미지 URL</label>
+                    <input
+                      type="url"
+                      class="form-control user-avatar-url-edit"
+                      value="{{avatarUrl}}"
+                    />
+                  </div>
+                  <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary btn-sm flex-grow-1">
+                      저장
+                    </button>
                     <button
                       type="button"
-                      class="btn btn-secondary btn-sm cancel-edit-btn"
+                      class="btn btn-ghost btn-sm flex-grow-1 cancel-edit-btn"
                       data-user-id="{{id}}"
                     >
                       취소
                     </button>
-                  </form>
-                </div>
+                  </div>
+                </form>
               </div>
-            {{/each}}
-          </script>
-        </div>
-      </div>
-    </div>
+            </div>
+          {{/each}}
+          {{#unless users}}
+            <div class="text-center py-3 text-muted">
+              등록된 사용자가 없습니다.
+            </div>
+          {{/unless}}
+        </script>
+      </section>
+    </main>
 
     <script src="scripts/users.js"></script>
   </body>

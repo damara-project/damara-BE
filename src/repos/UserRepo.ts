@@ -13,7 +13,12 @@ export const UserRepo = {
    */
   async create(data: UserCreationAttributes) {
     try {
-      const user = await UserModel.create(data);
+      // trustScore가 제공되지 않으면 기본값 50으로 설정
+      const userData = {
+        ...data,
+        trustScore: data.trustScore ?? 50,
+      };
+      const user = await UserModel.create(userData);
       return user.get(); // plain object로 변환
     } catch (e: unknown) {
       // Sequelize 고유 에러 코드: unique constraint
@@ -50,6 +55,14 @@ export const UserRepo = {
     const user = await UserModel.findOne({
       where: { studentId },
     });
+    return user ? user.get() : null;
+  },
+
+  /**
+   * ID 기반 조회
+   */
+  async findById(id: string) {
+    const user = await UserModel.findByPk(id);
     return user ? user.get() : null;
   },
 

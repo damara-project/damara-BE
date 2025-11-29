@@ -20,9 +20,10 @@ export interface PostAttributes {
   price: number;
   minParticipants: number; // 최소 인원 수
   currentQuantity: number;
-  status: "open" | "closed" | "cancelled";
+  status: "open" | "closed" | "in_progress" | "completed" | "cancelled";
   deadline: Date;
   pickupLocation: string | null;
+  category: string | null; // 카테고리 ID (food, daily, beauty, electronics, school, freemarket)
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -58,9 +59,10 @@ export class PostModel
   public price!: number;
   public minParticipants!: number;
   public currentQuantity!: number;
-  public status!: "open" | "closed" | "cancelled";
+  public status!: "open" | "closed" | "in_progress" | "completed" | "cancelled";
   public deadline!: Date;
   public pickupLocation!: string | null;
+  public category!: string | null;
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -118,7 +120,13 @@ PostModel.init(
     },
 
     status: {
-      type: DataTypes.ENUM("open", "closed", "cancelled"),
+      type: DataTypes.ENUM(
+        "open",
+        "closed",
+        "in_progress",
+        "completed",
+        "cancelled"
+      ),
       allowNull: false,
       defaultValue: "open",
     },
@@ -133,6 +141,13 @@ PostModel.init(
       allowNull: true,
       field: "pickup_location",
     },
+
+    category: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+      defaultValue: null,
+      // 카테고리: food, daily, beauty, electronics, school, freemarket
+    },
   },
 
   {
@@ -143,7 +158,7 @@ PostModel.init(
   }
 );
 
-// ----------------------------
+// ----------------------------2
 // 관계 설정 (Associations)
 // User와 Post의 1:N 관계 설정
 // ----------------------------

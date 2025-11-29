@@ -21,6 +21,7 @@ export interface UserAttributes {
   department: string | null;
   studentId: string; // 필수 필드로 변경
   avatarUrl: string | null;
+  trustScore: number; // 신뢰점수 (기본값: 50, 최소: 0, 최대: 100)
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -29,8 +30,8 @@ export interface UserAttributes {
 // Optional<T, K>를 이용해 생성 시 선택 입력 필드를 지정한다.
 export type UserCreationAttributes = Optional<
   UserAttributes,
-  "id" | "department" | "avatarUrl" | "createdAt" | "updatedAt"
->; // studentId는 필수이므로 Optional에서 제거
+  "id" | "department" | "avatarUrl" | "trustScore" | "createdAt" | "updatedAt"
+>; // studentId는 필수이므로 Optional에서 제거, trustScore는 기본값으로 설정
 
 // Sequelize 모델 타입 선언
 // Model<Attributes, CreationAttributes>를 상속하면
@@ -46,6 +47,7 @@ export class UserModel
   public department!: string | null;
   public studentId!: string; // 필수 필드로 변경
   public avatarUrl!: string | null;
+  public trustScore!: number; // 신뢰점수
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -96,6 +98,17 @@ UserModel.init(
       type: DataTypes.STRING(500),
       allowNull: true,
       field: "avatar_url",
+    },
+
+    trustScore: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 50,
+      field: "trust_score",
+      validate: {
+        min: 0,
+        max: 100,
+      },
     },
   },
 

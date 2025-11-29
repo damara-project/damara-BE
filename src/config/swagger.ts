@@ -34,7 +34,7 @@ const options: swaggerJsdoc.Options = {
       schemas: {
         User: {
           type: "object",
-          required: ["id", "email", "nickname", "studentId"],
+          required: ["id", "email", "nickname", "studentId", "trustScore"],
           properties: {
             id: {
               type: "string",
@@ -70,6 +70,13 @@ const options: swaggerJsdoc.Options = {
               nullable: true,
               description: "프로필 이미지 URL",
               example: "https://example.com/avatar.jpg",
+            },
+            trustScore: {
+              type: "integer",
+              description: "신뢰점수 (0~100, 기본값: 50)",
+              minimum: 0,
+              maximum: 100,
+              example: 50,
             },
             createdAt: {
               type: "string",
@@ -135,8 +142,8 @@ const options: swaggerJsdoc.Options = {
             },
             status: {
               type: "string",
-              enum: ["open", "closed", "cancelled"],
-              description: "상품 상태",
+              enum: ["open", "closed", "in_progress", "completed", "cancelled"],
+              description: "상품 상태 (open: 모집중, closed: 모집완료, in_progress: 진행중, completed: 거래완료, cancelled: 취소됨)",
               example: "open",
             },
             deadline: {
@@ -150,6 +157,13 @@ const options: swaggerJsdoc.Options = {
               nullable: true,
               description: "픽업 장소",
               example: "명지대학교 정문",
+            },
+            category: {
+              type: "string",
+              nullable: true,
+              enum: ["food", "daily", "beauty", "electronics", "school", "freemarket"],
+              description: "카테고리 ID (food: 먹거리, daily: 일상용품, beauty: 뷰티·패션, electronics: 전자기기, school: 학용품, freemarket: 프리마켓)",
+              example: "food",
             },
             images: {
               type: "array",
