@@ -157,42 +157,70 @@ setupSwagger(app);
  */
 app.use(Paths.Base, BaseRouter);
 
-// 디버깅: 등록된 라우트 확인 (모든 환경에서)
-logger.info("=== 등록된 라우트 확인 ===");
+// 디버깅: 등록된 라우트 확인 (서버 시작 후)
 // Express의 라우트 스택을 확인하기 위해 서버 시작 후 로깅
-process.nextTick(() => {
+setTimeout(() => {
+  logger.info("=== 등록된 라우트 확인 ===");
   const routes: string[] = [];
-  app._router?.stack?.forEach((middleware: any) => {
-    if (middleware.route) {
-      routes.push(
-        `${Object.keys(middleware.route.methods).join(", ").toUpperCase()} ${
-          middleware.route.path
-        }`
-      );
-    } else if (middleware.name === "router") {
-      middleware.handle?.stack?.forEach((handler: any) => {
-        if (handler.route) {
-          const method = Object.keys(handler.route.methods)
-            .join(", ")
-            .toUpperCase();
-          const path = handler.route.path;
-          routes.push(`${method} ${path}`);
+
+  // Express 5.x의 라우트 스택 확인
+  const routerStack = (app as any)._router?.stack || [];
+
+  function extractRoutes(stack: any[], basePath: string = ""): void {
+    stack.forEach((layer: any) => {
+      if (layer.route) {
+        // 직접 등록된 라우트
+        const method = Object.keys(layer.route.methods)
+          .join(", ")
+          .toUpperCase();
+        routes.push(`${method} ${basePath}${layer.route.path}`);
+      } else if (layer.name === "router" || layer.regexp) {
+        // 서브 라우터
+        const regexp = layer.regexp?.source || "";
+        // 정규식에서 경로 추출 (간단한 방법)
+        const match = regexp.match(/\\\/([^\\\/]+)/g);
+        let subPath = basePath;
+        if (match) {
+          const pathParts = match.map((p: string) => p.replace(/\\\//g, "/"));
+          subPath = basePath + pathParts.join("");
         }
-      });
-    }
-  });
+
+        if (layer.handle?.stack) {
+          extractRoutes(layer.handle.stack, subPath);
+        }
+      }
+    });
+  }
+
+  extractRoutes(routerStack);
+
   logger.info(`등록된 라우트 수: ${routes.length}`);
+
   // PATCH /:id/status 라우트가 있는지 확인
   const statusRoute = routes.find(
-    (r) => r.includes("PATCH") && r.includes("status")
+    (r) =>
+      r.includes("PATCH") && (r.includes("status") || r.includes("/:id/status"))
   );
   if (statusRoute) {
     logger.info(`✓ 상태 변경 라우트 발견: ${statusRoute}`);
   } else {
-    logger.err("✗ PATCH /:id/status 라우트를 찾을 수 없습니다!");
+    logger.warn("⚠ PATCH /:id/status 라우트를 찾을 수 없습니다.");
+    logger.warn(
+      "실제 요청을 보내서 테스트해보세요. 라우트는 등록되어 있을 수 있습니다."
+    );
   }
-  routes.forEach((route) => logger.info(`  - ${route}`));
-});
+
+  if (routes.length > 0) {
+    routes.slice(0, 30).forEach((route) => logger.info(`  - ${route}`));
+    if (routes.length > 30) {
+      logger.info(`  ... 외 ${routes.length - 30}개 라우트`);
+    }
+  } else {
+    logger.warn(
+      "⚠ 라우트를 찾을 수 없습니다. 라우트 확인 로직에 문제가 있을 수 있습니다."
+    );
+  }
+}, 2000); // 서버 시작 후 2초 뒤에 확인
 
 /**
  * ---------------------------------------------------------------------------
