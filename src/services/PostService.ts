@@ -139,8 +139,13 @@ export const PostService = {
     }
 
     // 상태 업데이트
-    const updatedPost = await PostRepo.update(id, { status: newStatus });
-    const newPost = updatedPost?.get();
+    await PostRepo.update(id, { status: newStatus });
+    
+    // 업데이트 후 최신 데이터 조회 (관계 데이터 포함)
+    const newPost = await PostRepo.findById(id);
+    if (!newPost) {
+      throw new RouteError(HttpStatusCodes.INTERNAL_SERVER_ERROR, "게시글 업데이트 후 조회에 실패했습니다.");
+    }
 
     // 상태 변경 시 신뢰점수 업데이트 (기존 로직 재사용)
     if (newStatus === "closed") {
