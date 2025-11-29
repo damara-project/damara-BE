@@ -141,3 +141,24 @@ export async function login(req: Request, res: Response, next: NextFunction) {
     next(error);
   }
 }
+
+/**
+ * 사용자 정보 조회
+ * GET /api/users/:id
+ *
+ * - 비밀번호 해시 제거 후 응답
+ */
+export async function getUserById(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { id } = req.params;
+    const user = await UserService.getUserById(id);
+
+    res.status(HttpStatusCodes.OK).json(user);
+  } catch (error) {
+    next(error);
+  }
+}

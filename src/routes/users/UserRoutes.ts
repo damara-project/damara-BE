@@ -3,6 +3,7 @@ import { Router } from "express";
 import {
   createUser,
   getAllUsers,
+  getUserById,
   updateUser,
   deleteUser,
   login,
@@ -157,6 +158,33 @@ userRouter.post("/", createUser);
  */
 // POST /api/users/login - 로그인 (학번 + 비밀번호)
 userRouter.post("/login", login);
+
+/**
+ * @swagger
+ * /api/users/{id}:
+ *   get:
+ *     summary: 사용자 정보 조회
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 사용자 UUID
+ *     responses:
+ *       200:
+ *         description: 사용자 정보 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       404:
+ *         description: 사용자를 찾을 수 없음
+ */
+// GET /api/users/:id - 사용자 정보 조회
+userRouter.get("/:id", getUserById);
 
 /**
  * @swagger

@@ -34,7 +34,7 @@ const options: swaggerJsdoc.Options = {
       schemas: {
         User: {
           type: "object",
-          required: ["id", "email", "nickname", "studentId"],
+          required: ["id", "email", "nickname", "studentId", "trustScore"],
           properties: {
             id: {
               type: "string",
@@ -70,6 +70,13 @@ const options: swaggerJsdoc.Options = {
               nullable: true,
               description: "프로필 이미지 URL",
               example: "https://example.com/avatar.jpg",
+            },
+            trustScore: {
+              type: "integer",
+              description: "신뢰점수 (0~100, 기본값: 50)",
+              minimum: 0,
+              maximum: 100,
+              example: 50,
             },
             createdAt: {
               type: "string",

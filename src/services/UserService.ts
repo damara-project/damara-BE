@@ -94,4 +94,35 @@ export const UserService = {
     const { passwordHash, ...userWithoutPassword } = user;
     return userWithoutPassword;
   },
+
+  /**
+   * 신뢰점수 업데이트
+   * @param userId 사용자 ID
+   * @param scoreChange 점수 변화량 (양수: 증가, 음수: 감소)
+   */
+  async updateTrustScore(userId: string, scoreChange: number) {
+    const user = await UserRepo.findById(userId);
+    if (!user) {
+      throw new RouteError(HttpStatusCodes.NOT_FOUND, "USER_NOT_FOUND");
+    }
+
+    // 현재 점수에 변화량을 더하고, 0~100 범위로 제한
+    const newScore = Math.max(0, Math.min(100, user.trustScore + scoreChange));
+
+    await UserRepo.update(userId, { trustScore: newScore });
+    return newScore;
+  },
+
+  /**
+   * 사용자 ID로 조회
+   */
+  async getUserById(id: string) {
+    const user = await UserRepo.findById(id);
+    if (!user) {
+      throw new RouteError(HttpStatusCodes.NOT_FOUND, "USER_NOT_FOUND");
+    }
+    // 비밀번호 해시 제외
+    const { passwordHash, ...userWithoutPassword } = user;
+    return userWithoutPassword;
+  },
 };
