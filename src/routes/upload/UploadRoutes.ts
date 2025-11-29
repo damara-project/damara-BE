@@ -36,9 +36,14 @@ const uploadRouter = Router();
  *             schema:
  *               type: object
  *               properties:
- *                 imageUrl:
+ *                 url:
  *                   type: string
  *                   description: 업로드된 이미지 URL
+ *                   example: "/uploads/images/abc123.png"
+ *                 filename:
+ *                   type: string
+ *                   description: 업로드된 파일명
+ *                   example: "abc123.png"
  */
 // 단일 이미지 업로드
 // POST /api/upload/image

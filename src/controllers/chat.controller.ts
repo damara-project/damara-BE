@@ -245,3 +245,33 @@ export async function deleteMessage(
     next(error);
   }
 }
+
+/**
+ * 사용자가 참여한 채팅방 목록 조회
+ * GET /api/chat/rooms/user/:userId
+ */
+export async function getChatRoomsByUserId(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { userId } = req.params;
+    const limit = req.query.limit
+      ? parseInt(req.query.limit as string, 10)
+      : 20;
+    const offset = req.query.offset
+      ? parseInt(req.query.offset as string, 10)
+      : 0;
+
+    const result = await ChatService.getChatRoomsByUserId(
+      userId,
+      limit,
+      offset
+    );
+
+    res.status(HttpStatusCodes.OK).json(result);
+  } catch (error) {
+    next(error);
+  }
+}

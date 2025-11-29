@@ -90,7 +90,12 @@ export async function getPostById(
 ) {
   try {
     const { id } = req.params;
-    const post = await PostService.getPostById(id);
+    // userId는 헤더나 쿼리에서 가져옴 (인증 시스템 구현 시 토큰에서 추출)
+    const userId = (req.headers["x-user-id"] || req.query.userId) as
+      | string
+      | undefined;
+
+    const post = await PostService.getPostById(id, userId);
 
     res.status(HttpStatusCodes.OK).json(post);
   } catch (error) {

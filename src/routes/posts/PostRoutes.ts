@@ -14,6 +14,11 @@ import {
   getParticipatedPosts,
   checkParticipation,
 } from "../../controllers/post.controller";
+import {
+  addFavorite,
+  removeFavorite,
+  checkFavorite,
+} from "../../controllers/favorite.controller";
 
 const postRouter = Router();
 
@@ -419,6 +424,132 @@ postRouter.get("/:id/participate/:userId", checkParticipation);
 
 /**
  * @swagger
+ * /api/posts/{postId}/favorite:
+ *   post:
+ *     summary: 관심 등록
+ *     tags: [Posts]
+ *     parameters:
+ *       - in: path
+ *         name: postId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 게시글 UUID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - userId
+ *             properties:
+ *               userId:
+ *                 type: string
+ *                 format: uuid
+ *                 description: 사용자 UUID
+ *           example:
+ *             userId: "a87522bd-bc79-47b0-a73f-46ea4068a158"
+ *     responses:
+ *       201:
+ *         description: 관심 등록 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                   format: uuid
+ *                 postId:
+ *                   type: string
+ *                   format: uuid
+ *                 userId:
+ *                   type: string
+ *                   format: uuid
+ *                 createdAt:
+ *                   type: string
+ *                   format: date-time
+ *       400:
+ *         description: 이미 관심 등록됨
+ */
+// POST /api/posts/:postId/favorite - 관심 등록
+postRouter.post("/:postId/favorite", addFavorite);
+
+/**
+ * @swagger
+ * /api/posts/{postId}/favorite/{userId}:
+ *   get:
+ *     summary: 관심 여부 확인
+ *     tags: [Posts]
+ *     parameters:
+ *       - in: path
+ *         name: postId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 게시글 UUID
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 사용자 UUID
+ *     responses:
+ *       200:
+ *         description: 관심 여부 확인 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 isFavorite:
+ *                   type: boolean
+ */
+// GET /api/posts/:postId/favorite/:userId - 관심 여부 확인
+postRouter.get("/:postId/favorite/:userId", checkFavorite);
+
+/**
+ * @swagger
+ * /api/posts/{postId}/favorite/{userId}:
+ *   delete:
+ *     summary: 관심 해제
+ *     tags: [Posts]
+ *     parameters:
+ *       - in: path
+ *         name: postId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 게시글 UUID
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 사용자 UUID
+ *     responses:
+ *       200:
+ *         description: 관심 해제 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "관심 해제되었습니다."
+ */
+// DELETE /api/posts/:postId/favorite/:userId - 관심 해제
+postRouter.delete("/:postId/favorite/:userId", removeFavorite);
+
+/**
+ * @swagger
  * /api/posts/{id}/participate:
  *   post:
  *     summary: 공동구매 참여
@@ -499,9 +630,21 @@ postRouter.delete("/:id", deletePost);
  *         schema:
  *           type: string
  *         description: 상품 UUID
+ *       - in: header
+ *         name: x-user-id
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 사용자 ID (isFavorite 확인용, 선택사항)
+ *       - in: query
+ *         name: userId
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 사용자 ID (isFavorite 확인용, 선택사항)
  *     responses:
  *       200:
- *         description: 상품 상세 정보
+ *         description: 상품 상세 정보 (favoriteCount, isFavorite 포함)
  *         content:
  *           application/json:
  *             schema:

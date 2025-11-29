@@ -7,6 +7,9 @@ import { MessageCreationAttributes } from "../models/Message";
 import { RouteError } from "../common/util/route-errors";
 import HttpStatusCodes from "../common/constants/HttpStatusCodes";
 import UserModel from "../models/User";
+import { PostParticipantRepo } from "../repos/PostParticipantRepo";
+import MessageModel from "../models/Message";
+import { Op } from "sequelize";
 
 export const ChatService = {
   /**
@@ -125,5 +128,136 @@ export const ChatService = {
    */
   async deleteMessage(id: string) {
     await MessageRepo.delete(id);
+  },
+
+  /**
+   * 사용자가 참여한 채팅방 목록 조회
+   * - 참여한 게시글의 채팅방 목록
+   * - 각 채팅방의 참여자, 마지막 메시지, 읽지 않은 메시지 수 포함
+   */
+  async getChatRoomsByUserId(
+    userId: string,
+    limit = 20,
+    offset = 0
+  ) {
+    // 사용자 존재 확인
+    const user = await UserModel.findByPk(userId);
+    if (!user) {
+      throw new RouteError(HttpStatusCodes.NOT_FOUND, "USER_NOT_FOUND");
+    }
+
+    // 사용자가 참여한 게시글의 채팅방 목록 조회
+    const chatRooms = await ChatRoomRepo.findByUserId(userId, limit, offset);
+
+    // 각 채팅방에 대한 추가 정보 조회
+    const enrichedChatRooms = (await Promise.all(
+      chatRooms.map(async (chatRoom) => {
+        const postId = chatRoom.postId;
+
+        // 참여자 목록 조회 (주최자 + 참여자)
+        const participants = await PostParticipantRepo.findByPostId(postId);
+        
+        // Post 정보 조회 (images 포함)
+        const PostModel = (await import("../models/Post")).default;
+        const PostImageModel = (await import("../models/PostImage")).default;
+        const post = await PostModel.findByPk(postId, {
+          include: [
+            {
+              model: PostImageModel,
+              as: "images",
+              attributes: ["id", "imageUrl", "sortOrder"],
+              order: [["sortOrder", "ASC"]],
+            },
+          ],
+        });
+
+        if (!post) {
+          // Post가 없으면 스킵
+          return null;
+        }
+
+        const postData = post.get() as any;
+        const postImages = (post as any).images || [];
+
+        // 주최자 정보 추가
+        const author = await UserModel.findByPk(postData.authorId, {
+          attributes: ["id", "nickname", "avatarUrl"],
+        });
+
+        const participantList = [
+          ...(author
+            ? [
+                {
+                  userId: author.id,
+                  nickname: author.nickname,
+                  avatarUrl: author.avatarUrl,
+                },
+              ]
+            : []),
+          ...participants.map((p: any) => ({
+            userId: p.user?.id || p.userId,
+            nickname: p.user?.nickname || "",
+            avatarUrl: p.user?.avatarUrl || null,
+          })),
+        ];
+
+        // 마지막 메시지 조회
+        const lastMessage = await MessageModel.findOne({
+          where: { chatRoomId: chatRoom.id },
+          order: [["createdAt", "DESC"]],
+          include: [
+            {
+              model: UserModel,
+              as: "sender",
+              attributes: ["id", "nickname"],
+            },
+          ],
+        });
+
+        // 읽지 않은 메시지 수 조회
+        const unreadCount = await MessageRepo.countUnreadMessages(
+          chatRoom.id,
+          userId
+        );
+
+        return {
+          id: chatRoom.id,
+          postId: chatRoom.postId,
+          post: {
+            id: postData.id,
+            title: postData.title,
+            authorId: postData.authorId,
+            images: postImages.map((img: any) => img.imageUrl),
+          },
+          participants: participantList,
+          lastMessage: lastMessage
+            ? {
+                content: lastMessage.content,
+                senderId: lastMessage.senderId,
+                createdAt: lastMessage.createdAt,
+              }
+            : null,
+          unreadCount,
+          createdAt: chatRoom.createdAt,
+          updatedAt: chatRoom.updatedAt,
+        };
+      })
+    )).filter((room) => room !== null);
+
+    // 전체 개수 조회
+    const totalParticipants = await PostParticipantRepo.findByUserId(userId);
+    const totalPostIds = totalParticipants.map((p) => p.postId);
+    const total = totalPostIds.length > 0 
+      ? await (await import("../models/ChatRoom")).default.count({
+          where: { postId: totalPostIds },
+        })
+      : 0;
+
+    return {
+      chatRooms: enrichedChatRooms,
+      total,
+      limit,
+      offset,
+    };
   },
 };
