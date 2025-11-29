@@ -162,6 +162,63 @@ userRouter.post("/login", login);
 
 /**
  * @swagger
+ * /api/users/{userId}/favorites:
+ *   get:
+ *     summary: 내가 관심 등록한 게시글 목록 조회
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 사용자 UUID
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *         description: 조회 개수
+ *       - in: query
+ *         name: offset
+ *         schema:
+ *           type: integer
+ *           default: 0
+ *         description: 시작 위치
+ *     responses:
+ *       200:
+ *         description: 관심 목록 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 favorites:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                         format: uuid
+ *                       postId:
+ *                         type: string
+ *                         format: uuid
+ *                       post:
+ *                         $ref: '#/components/schemas/Post'
+ *                       createdAt:
+ *                         type: string
+ *                         format: date-time
+ *                 total:
+ *                   type: integer
+ *                   description: 전체 관심 개수
+ */
+// GET /api/users/:userId/favorites - 내가 관심 등록한 게시글 목록 조회 (더 구체적인 라우트를 먼저 배치)
+userRouter.get("/:userId/favorites", getFavorites);
+
+/**
+ * @swagger
  * /api/users/{id}:
  *   get:
  *     summary: 사용자 정보 조회
@@ -184,7 +241,7 @@ userRouter.post("/login", login);
  *       404:
  *         description: 사용자를 찾을 수 없음
  */
-// GET /api/users/:id - 사용자 정보 조회
+// GET /api/users/:id - 사용자 정보 조회 (일반 라우트는 마지막에 배치)
 userRouter.get("/:id", getUserById);
 
 /**
@@ -269,62 +326,5 @@ userRouter.put("/:id", updateUser);
  */
 // DELETE /api/users/:id - 회원 삭제
 userRouter.delete("/:id", deleteUser);
-
-/**
- * @swagger
- * /api/users/{userId}/favorites:
- *   get:
- *     summary: 내가 관심 등록한 게시글 목록 조회
- *     tags: [Users]
- *     parameters:
- *       - in: path
- *         name: userId
- *         required: true
- *         schema:
- *           type: string
- *           format: uuid
- *         description: 사용자 UUID
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           default: 20
- *         description: 조회 개수
- *       - in: query
- *         name: offset
- *         schema:
- *           type: integer
- *           default: 0
- *         description: 시작 위치
- *     responses:
- *       200:
- *         description: 관심 목록 조회 성공
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 favorites:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       id:
- *                         type: string
- *                         format: uuid
- *                       postId:
- *                         type: string
- *                         format: uuid
- *                       post:
- *                         $ref: '#/components/schemas/Post'
- *                       createdAt:
- *                         type: string
- *                         format: date-time
- *                 total:
- *                   type: integer
- *                   description: 전체 관심 개수
- */
-// GET /api/users/:userId/favorites - 내가 관심 등록한 게시글 목록 조회
-userRouter.get("/:userId/favorites", getFavorites);
 
 export default userRouter;

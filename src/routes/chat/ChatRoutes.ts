@@ -156,6 +156,7 @@ chatRouter.post("/rooms", createChatRoom);
  *         description: 사용자를 찾을 수 없음
  */
 // GET /api/chat/rooms/user/:userId - 사용자가 참여한 채팅방 목록 조회
+// 중요: 더 구체적인 라우트를 먼저 배치해야 함
 chatRouter.get("/rooms/user/:userId", getChatRoomsByUserId);
 
 /**
@@ -175,7 +176,102 @@ chatRouter.get("/rooms/user/:userId", getChatRoomsByUserId);
  *       200:
  *         description: 채팅방 조회 또는 생성 성공
  */
+// GET /api/chat/rooms/post/:postId - Post ID로 채팅방 조회 또는 생성
+// 중요: 더 구체적인 라우트를 먼저 배치해야 함
 chatRouter.get("/rooms/post/:postId", getOrCreateChatRoomByPostId);
+
+/**
+ * @swagger
+ * /api/chat/rooms/{chatRoomId}/messages:
+ *   get:
+ *     summary: 채팅방의 메시지 목록 조회
+ *     tags: [Chat]
+ *     parameters:
+ *       - in: path
+ *         name: chatRoomId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 50
+ *       - in: query
+ *         name: offset
+ *         schema:
+ *           type: integer
+ *           default: 0
+ *     responses:
+ *       200:
+ *         description: 메시지 목록 조회 성공
+ *       404:
+ *         description: 채팅방을 찾을 수 없음
+ */
+// GET /api/chat/rooms/:chatRoomId/messages - 채팅방의 메시지 목록 조회
+// 중요: 더 구체적인 라우트를 먼저 배치해야 함
+chatRouter.get("/rooms/:chatRoomId/messages", getMessagesByChatRoomId);
+
+/**
+ * @swagger
+ * /api/chat/rooms/{chatRoomId}/read-all:
+ *   patch:
+ *     summary: 채팅방의 모든 메시지 읽음 처리
+ *     tags: [Chat]
+ *     parameters:
+ *       - in: path
+ *         name: chatRoomId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - userId
+ *             properties:
+ *               userId:
+ *                 type: string
+ *                 format: uuid
+ *     responses:
+ *       204:
+ *         description: 읽음 처리 성공
+ */
+// PATCH /api/chat/rooms/:chatRoomId/read-all - 채팅방의 모든 메시지 읽음 처리
+// 중요: 더 구체적인 라우트를 먼저 배치해야 함
+chatRouter.patch("/rooms/:chatRoomId/read-all", markAllMessagesAsRead);
+
+/**
+ * @swagger
+ * /api/chat/rooms/{chatRoomId}/unread-count:
+ *   get:
+ *     summary: 읽지 않은 메시지 수 조회
+ *     tags: [Chat]
+ *     parameters:
+ *       - in: path
+ *         name: chatRoomId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: query
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: 읽지 않은 메시지 수 조회 성공
+ */
+// GET /api/chat/rooms/:chatRoomId/unread-count - 읽지 않은 메시지 수 조회
+// 중요: 더 구체적인 라우트를 먼저 배치해야 함
+chatRouter.get("/rooms/:chatRoomId/unread-count", getUnreadMessageCount);
 
 /**
  * @swagger
@@ -196,6 +292,7 @@ chatRouter.get("/rooms/post/:postId", getOrCreateChatRoomByPostId);
  *       404:
  *         description: 채팅방을 찾을 수 없음
  */
+// GET /api/chat/rooms/:id - 채팅방 ID로 조회 (일반 라우트는 마지막에 배치)
 chatRouter.get("/rooms/:id", getChatRoomById);
 
 /**
@@ -251,37 +348,6 @@ chatRouter.post("/messages", sendMessage);
 
 /**
  * @swagger
- * /api/chat/rooms/{chatRoomId}/messages:
- *   get:
- *     summary: 채팅방의 메시지 목록 조회
- *     tags: [Chat]
- *     parameters:
- *       - in: path
- *         name: chatRoomId
- *         required: true
- *         schema:
- *           type: string
- *           format: uuid
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           default: 50
- *       - in: query
- *         name: offset
- *         schema:
- *           type: integer
- *           default: 0
- *     responses:
- *       200:
- *         description: 메시지 목록 조회 성공
- *       404:
- *         description: 채팅방을 찾을 수 없음
- */
-chatRouter.get("/rooms/:chatRoomId/messages", getMessagesByChatRoomId);
-
-/**
- * @swagger
  * /api/chat/messages/{id}/read:
  *   patch:
  *     summary: 메시지 읽음 처리
@@ -312,62 +378,6 @@ chatRouter.get("/rooms/:chatRoomId/messages", getMessagesByChatRoomId);
  *         description: 메시지를 찾을 수 없음
  */
 chatRouter.patch("/messages/:id/read", markMessageAsRead);
-
-/**
- * @swagger
- * /api/chat/rooms/{chatRoomId}/read-all:
- *   patch:
- *     summary: 채팅방의 모든 메시지 읽음 처리
- *     tags: [Chat]
- *     parameters:
- *       - in: path
- *         name: chatRoomId
- *         required: true
- *         schema:
- *           type: string
- *           format: uuid
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - userId
- *             properties:
- *               userId:
- *                 type: string
- *                 format: uuid
- *     responses:
- *       204:
- *         description: 읽음 처리 성공
- */
-chatRouter.patch("/rooms/:chatRoomId/read-all", markAllMessagesAsRead);
-
-/**
- * @swagger
- * /api/chat/rooms/{chatRoomId}/unread-count:
- *   get:
- *     summary: 읽지 않은 메시지 수 조회
- *     tags: [Chat]
- *     parameters:
- *       - in: path
- *         name: chatRoomId
- *         required: true
- *         schema:
- *           type: string
- *           format: uuid
- *       - in: query
- *         name: userId
- *         required: true
- *         schema:
- *           type: string
- *           format: uuid
- *     responses:
- *       200:
- *         description: 읽지 않은 메시지 수 조회 성공
- */
-chatRouter.get("/rooms/:chatRoomId/unread-count", getUnreadMessageCount);
 
 /**
  * @swagger

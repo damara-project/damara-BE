@@ -98,7 +98,7 @@ notificationRouter.get("/", getNotifications);
  *                 unreadCount:
  *                   type: integer
  */
-// GET /api/notifications/unread-count - 읽지 않은 알림 개수 조회
+// GET /api/notifications/unread-count - 읽지 않은 알림 개수 조회 (더 구체적인 라우트를 먼저 배치)
 notificationRouter.get("/unread-count", getUnreadCount);
 
 /**
@@ -137,7 +137,7 @@ notificationRouter.get("/unread-count", getUnreadCount);
  *                 updatedCount:
  *                   type: integer
  */
-// PATCH /api/notifications/read-all - 모든 알림 읽음 처리
+// PATCH /api/notifications/read-all - 모든 알림 읽음 처리 (더 구체적인 라우트를 먼저 배치)
 notificationRouter.patch("/read-all", markAllNotificationsAsRead);
 
 /**
@@ -177,7 +177,7 @@ notificationRouter.patch("/read-all", markAllNotificationsAsRead);
  *             schema:
  *               $ref: '#/components/schemas/Notification'
  */
-// PATCH /api/notifications/:id/read - 알림 읽음 처리
+// PATCH /api/notifications/:id/read - 알림 읽음 처리 (더 구체적인 라우트를 먼저 배치)
 notificationRouter.patch("/:id/read", markNotificationAsRead);
 
 /**

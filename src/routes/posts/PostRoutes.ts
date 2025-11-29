@@ -334,7 +334,12 @@ postRouter.put("/:id", updatePost);
  */
 // PATCH /api/posts/:id/status - 게시글 상태 변경 (작성자만 가능)
 // 중요: 이 라우트는 /:id 라우트보다 먼저 정의되어야 함 (더 구체적인 라우트 우선)
-postRouter.patch("/:id/status", updatePostStatus);
+postRouter.patch("/:id/status", (req, res, next) => {
+  logger.info("=== PATCH /:id/status 라우트 핸들러 호출됨 ===");
+  logger.info(`요청 경로: ${req.path}`);
+  logger.info(`요청 파라미터: ${JSON.stringify(req.params)}`);
+  updatePostStatus(req, res, next);
+});
 logger.info("✓ PATCH /api/posts/:id/status 라우트 등록됨");
 
 /**

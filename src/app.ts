@@ -64,6 +64,21 @@ app.use(morgan("combined")); // Apache combined log format
 
 /**
  * ---------------------------------------------------------------------------
+ * Request Debugging Middleware (모든 요청 로깅)
+ * ---------------------------------------------------------------------------
+ */
+app.use((req: Request, res: Response, next: NextFunction) => {
+  logger.info(`[요청 수신] ${req.method} ${req.path}`);
+  logger.info(`[요청 파라미터] ${JSON.stringify(req.params)}`);
+  logger.info(`[요청 쿼리] ${JSON.stringify(req.query)}`);
+  if (req.body && Object.keys(req.body).length > 0) {
+    logger.info(`[요청 바디] ${JSON.stringify(req.body)}`);
+  }
+  next();
+});
+
+/**
+ * ---------------------------------------------------------------------------
  * Body parser
  * ---------------------------------------------------------------------------
  */
@@ -142,35 +157,42 @@ setupSwagger(app);
  */
 app.use(Paths.Base, BaseRouter);
 
-// 디버깅: 등록된 라우트 확인 (개발 환경에서만)
-if (ENV.NodeEnv === "development") {
-  logger.info("=== 등록된 라우트 확인 ===");
-  // Express의 라우트 스택을 확인하기 위해 서버 시작 후 로깅
-  process.nextTick(() => {
-    const routes: string[] = [];
-    app._router?.stack?.forEach((middleware: any) => {
-      if (middleware.route) {
-        routes.push(
-          `${Object.keys(middleware.route.methods).join(", ").toUpperCase()} ${
-            middleware.route.path
-          }`
-        );
-      } else if (middleware.name === "router") {
-        middleware.handle?.stack?.forEach((handler: any) => {
-          if (handler.route) {
-            routes.push(
-              `${Object.keys(handler.route.methods).join(", ").toUpperCase()} ${
-                middleware.regexp.source
-              }${handler.route.path}`
-            );
-          }
-        });
-      }
-    });
-    logger.info(`등록된 라우트 수: ${routes.length}`);
-    routes.forEach((route) => logger.info(`  - ${route}`));
+// 디버깅: 등록된 라우트 확인 (모든 환경에서)
+logger.info("=== 등록된 라우트 확인 ===");
+// Express의 라우트 스택을 확인하기 위해 서버 시작 후 로깅
+process.nextTick(() => {
+  const routes: string[] = [];
+  app._router?.stack?.forEach((middleware: any) => {
+    if (middleware.route) {
+      routes.push(
+        `${Object.keys(middleware.route.methods).join(", ").toUpperCase()} ${
+          middleware.route.path
+        }`
+      );
+    } else if (middleware.name === "router") {
+      middleware.handle?.stack?.forEach((handler: any) => {
+        if (handler.route) {
+          const method = Object.keys(handler.route.methods)
+            .join(", ")
+            .toUpperCase();
+          const path = handler.route.path;
+          routes.push(`${method} ${path}`);
+        }
+      });
+    }
   });
-}
+  logger.info(`등록된 라우트 수: ${routes.length}`);
+  // PATCH /:id/status 라우트가 있는지 확인
+  const statusRoute = routes.find(
+    (r) => r.includes("PATCH") && r.includes("status")
+  );
+  if (statusRoute) {
+    logger.info(`✓ 상태 변경 라우트 발견: ${statusRoute}`);
+  } else {
+    logger.err("✗ PATCH /:id/status 라우트를 찾을 수 없습니다!");
+  }
+  routes.forEach((route) => logger.info(`  - ${route}`));
+});
 
 /**
  * ---------------------------------------------------------------------------
