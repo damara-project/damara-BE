@@ -27,33 +27,70 @@
 
   <!-- Body -->
   <body class="app-body">
-    <nav class="navbar navbar-expand-lg app-nav shadow-sm sticky-top">
+    <nav class="navbar navbar-expand-lg app-nav mb-4">
       <div class="container">
         <a class="navbar-brand" href="/">
-          <span>🍊</span>
-          다마라
+          <span class="brand-text">Damara</span>
         </a>
         <button
           class="navbar-toggler"
           type="button"
           data-bs-toggle="collapse"
           data-bs-target="#navbarNav"
+          aria-controls="navbarNav"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
         >
           <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
-          <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-2">
+          <ul class="navbar-nav ms-auto align-items-center gap-3">
             <li class="nav-item">
               <a class="nav-link" href="/">홈</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link active" href="/posts">내 상품 관리</a>
+              <a class="nav-link active" href="/posts">내 상품</a>
             </li>
             <li class="nav-item">
               <a class="nav-link" href="/users">회원 목록</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="/chat">실시간 채팅</a>
+              <a class="nav-link" href="/chat">채팅</a>
+            </li>
+            <li class="nav-item">
+              <button
+                class="btn btn-link nav-link p-0"
+                id="login-modal-btn"
+                style="text-decoration: none;"
+              >
+                로그인
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="btn btn-primary btn-sm" id="register-modal-btn">
+                회원가입
+              </button>
+            </li>
+            <li class="nav-item">
+              <span id="current-user-display" class="d-none d-flex align-items-center gap-2">
+                <span
+                  id="user-nickname-display"
+                  class="fw-semibold"
+                  style="color: var(--text-strong);"
+                ></span>
+                <span
+                  id="trust-score-display"
+                  class="badge bg-success d-none"
+                  style="font-size: 0.75rem;"
+                ></span>
+                <button
+                  class="btn btn-sm btn-outline-secondary"
+                  id="logout-btn"
+                  style="border-radius: var(--radius-sm);"
+                >
+                  로그아웃
+                </button>
+              </span>
             </li>
           </ul>
         </div>

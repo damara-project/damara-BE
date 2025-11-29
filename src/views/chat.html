@@ -24,33 +24,70 @@
   </head>
 
   <body class="app-body">
-    <nav class="navbar navbar-expand-lg app-nav shadow-sm sticky-top">
+    <nav class="navbar navbar-expand-lg app-nav mb-4">
       <div class="container">
         <a class="navbar-brand" href="/">
-          <span>🍊</span>
-          다마라
+          <span class="brand-text">Damara</span>
         </a>
         <button
           class="navbar-toggler"
           type="button"
           data-bs-toggle="collapse"
           data-bs-target="#navbarNav"
+          aria-controls="navbarNav"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
         >
           <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
-          <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-2">
+          <ul class="navbar-nav ms-auto align-items-center gap-3">
             <li class="nav-item">
               <a class="nav-link" href="/">홈</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="/posts">내 상품 관리</a>
+              <a class="nav-link" href="/posts">내 상품</a>
             </li>
             <li class="nav-item">
               <a class="nav-link" href="/users">회원 목록</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link active" href="/chat">실시간 채팅</a>
+              <a class="nav-link active" href="/chat">채팅</a>
+            </li>
+            <li class="nav-item">
+              <button
+                class="btn btn-link nav-link p-0"
+                id="login-modal-btn"
+                style="text-decoration: none;"
+              >
+                로그인
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="btn btn-primary btn-sm" id="register-modal-btn">
+                회원가입
+              </button>
+            </li>
+            <li class="nav-item">
+              <span id="current-user-display" class="d-none d-flex align-items-center gap-2">
+                <span
+                  id="user-nickname-display"
+                  class="fw-semibold"
+                  style="color: var(--text-strong);"
+                ></span>
+                <span
+                  id="trust-score-display"
+                  class="badge bg-success d-none"
+                  style="font-size: 0.75rem;"
+                ></span>
+                <button
+                  class="btn btn-sm btn-outline-secondary"
+                  id="logout-btn"
+                  style="border-radius: var(--radius-sm);"
+                >
+                  로그아웃
+                </button>
+              </span>
             </li>
           </ul>
         </div>
@@ -68,6 +105,14 @@
         <div class="chip">
           <span class="connection-status disconnected" id="connection-status"></span>
           <span id="connection-text">연결 중...</span>
+        </div>
+      </div>
+
+      <!-- 채팅방 목록 (로그인한 사용자만 표시) -->
+      <div id="chat-rooms-section" class="mb-4" style="display: none;">
+        <h3 class="mb-3">내 채팅방 목록</h3>
+        <div id="chat-rooms-list" class="row g-3">
+          <!-- 채팅방 목록이 여기에 표시됨 -->
         </div>
       </div>
 
@@ -537,6 +582,94 @@
           socket.disconnect();
         }
       });
+
+      // ============================================================================
+      // 채팅방 목록 로드
+      // ============================================================================
+      async function loadChatRooms(userId) {
+        try {
+          const response = await fetch(`/api/chat/rooms/user/${userId}`);
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const data = await response.json();
+          const chatRooms = data.chatRooms || [];
+
+          const roomsList = document.getElementById("chat-rooms-list");
+          const roomsSection = document.getElementById("chat-rooms-section");
+
+          if (chatRooms.length === 0) {
+            roomsList.innerHTML = '<div class="col-12"><p class="text-muted text-center">참여한 채팅방이 없습니다.</p></div>';
+            if (roomsSection) roomsSection.style.display = "block";
+            return;
+          }
+
+          const html = chatRooms
+            .map(
+              (room) => `
+            <div class="col-md-6 col-lg-4">
+              <div class="card h-100">
+                <div class="card-body">
+                  <h6 class="card-title">${room.post?.title || "제목 없음"}</h6>
+                  <p class="card-text small text-muted">
+                    ${room.lastMessage ? room.lastMessage.content : "메시지 없음"}
+                  </p>
+                  <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                      ${room.lastMessage ? new Date(room.lastMessage.createdAt).toLocaleString("ko-KR") : ""}
+                    </small>
+                    ${room.unreadCount > 0 ? `<span class="badge bg-danger">${room.unreadCount}</span>` : ""}
+                  </div>
+                </div>
+                <div class="card-footer">
+                  <button
+                    class="btn btn-sm btn-primary w-100"
+                    onclick="enterChatRoom('${room.id}', '${userId}', '${room.post?.title || ""}')"
+                  >
+                    채팅방 입장
+                  </button>
+                </div>
+              </div>
+            </div>
+          `
+            )
+            .join("");
+
+          roomsList.innerHTML = html;
+          if (roomsSection) roomsSection.style.display = "block";
+        } catch (error) {
+          console.error("Error loading chat rooms:", error);
+        }
+      }
+
+      function enterChatRoom(chatRoomId, userId, postTitle) {
+        document.getElementById("chat-room-id").value = chatRoomId;
+        document.getElementById("user-id").value = userId;
+        document.getElementById("chat-room-title").textContent = postTitle || "채팅방";
+        document.getElementById("join-room-btn").click();
+      }
+
+      // URL에서 userId 가져오기
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlUserId = urlParams.get("userId");
+      if (urlUserId) {
+        loadChatRooms(urlUserId);
+        document.getElementById("user-id").value = urlUserId;
+      }
+
+      // 로컬 스토리지에서 사용자 정보 가져오기
+      const storedUser = localStorage.getItem("currentUser");
+      if (storedUser) {
+        try {
+          const user = JSON.parse(storedUser);
+          if (user.id && !urlUserId) {
+            loadChatRooms(user.id);
+            document.getElementById("user-id").value = user.id;
+          }
+        } catch (e) {
+          console.error("Error parsing user from storage:", e);
+        }
+      }
     </script>
   </body>
 </html>
