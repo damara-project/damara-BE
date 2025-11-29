@@ -9,6 +9,40 @@
 
 ### Added - 2025-11-24
 
+#### 신뢰점수(Trust Score) 기능 추가
+- **User 모델에 trustScore 필드 추가**
+  - `src/models/User.ts`: `trustScore` 필드 추가 (기본값 50, 최소 0, 최대 100)
+  - 데이터베이스 컬럼: `trust_score INTEGER NOT NULL DEFAULT 50`
+
+- **회원가입 시 초기 점수 설정**
+  - `src/repos/UserRepo.ts`: 회원가입 시 `trustScore` 기본값 50 자동 설정
+
+- **API 응답에 trustScore 포함**
+  - `POST /api/users`: 회원가입 응답에 `trustScore: 50` 포함
+  - `POST /api/users/login`: 로그인 응답에 `trustScore` 포함
+  - `GET /api/users/:id`: 사용자 정보 조회 응답에 `trustScore` 포함 (신규 추가)
+  - `GET /api/users`: 전체 조회 응답에 `trustScore` 포함
+
+- **신뢰점수 자동 업데이트 로직**
+  - `src/services/PostService.ts`: 
+    - `updatePost()`: 게시글 상태가 `closed`로 변경 시 주최자 +10점, 참여자 +5점
+    - `updatePost()`: 게시글 상태가 `cancelled`로 변경 시 주최자 -5점
+    - `deletePost()`: 게시글 삭제 시 주최자 -5점
+    - `PostParticipantService.leavePost()`: 참여 취소 시 참여자 -3점
+
+- **UserService 신뢰점수 관리 메서드**
+  - `updateTrustScore(userId, scoreChange)`: 신뢰점수 업데이트 (0~100 범위 제한)
+  - `getUserById(id)`: 사용자 ID로 조회 (비밀번호 제외)
+
+- **Swagger API 문서 업데이트**
+  - `src/config/swagger.ts`: User 스키마에 `trustScore` 필드 추가
+  - `src/routes/users/UserRoutes.ts`: `GET /api/users/:id` API 문서 추가
+
+- **문서화**
+  - `docs/TRUST_SCORE_FEATURE.md`: 신뢰점수 기능 상세 문서 추가
+
+### Added - 2025-11-24
+
 #### 카테고리 기능 추가
 - **Post 모델에 category 필드 추가**
   - `src/models/Post.ts`: `category` 필드 추가 (nullable, string(50))

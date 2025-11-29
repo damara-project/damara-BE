@@ -113,6 +113,16 @@ Check for typescript errors.
 - **API 사용 예시**: `GET /api/posts?category=food`
 - **상세 문서**: [카테고리 기능 문서](./docs/CATEGORY_FEATURE.md)
 
+### 신뢰점수(Trust Score) 기능
+사용자의 공동구매 활동을 기반으로 신뢰도를 수치화한 신뢰점수 시스템입니다.
+
+- **초기 점수**: 회원가입 시 50점
+- **점수 범위**: 0 ~ 100점
+- **자동 업데이트**: 공동구매 완료/취소, 참여/참여 취소 시 자동으로 점수 조정
+- **등급 시스템**: 최우수(90~100), 우수(70~89), 보통(50~69), 주의(30~49), 경고(0~29)
+- **API 사용 예시**: `GET /api/users/:id` (trustScore 포함)
+- **상세 문서**: [신뢰점수 기능 문서](./docs/TRUST_SCORE_FEATURE.md)
+
 ## API Documentation (Swagger)
 
 프로젝트에는 Swagger UI가 내장되어 있어 API 문서를 쉽게 확인하고 테스트할 수 있습니다.

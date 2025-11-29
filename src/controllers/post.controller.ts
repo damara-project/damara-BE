@@ -11,6 +11,10 @@ import {
   updatePostSchema,
   UpdatePostReq,
 } from "../routes/common/validation/post-schemas";
+import {
+  updatePostStatusSchema,
+  UpdatePostStatusReq,
+} from "../routes/common/validation/post-status-schemas";
 
 /**
  * 공동구매 상품 전체 목록
@@ -179,6 +183,45 @@ export async function deletePost(
     await PostService.deletePost(id);
 
     res.status(HttpStatusCodes.NO_CONTENT).send();
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * 게시글 상태 변경
+ * PATCH /api/posts/:id/status
+ * body: { status: "closed" }
+ *
+ * - 작성자만 변경 가능
+ * - 상태 전이 규칙 적용 (선택사항)
+ */
+export async function updatePostStatus(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { id } = req.params;
+    const validatedData = parseReq<UpdatePostStatusReq>(updatePostStatusSchema)(
+      req.body
+    );
+    const { status } = validatedData;
+
+    // Request body에서 authorId 추출 (프론트엔드에서 전달)
+    // 또는 세션/토큰에서 authorId 추출 (인증 시스템 구현 시)
+    const authorId = req.body.authorId || req.headers["x-user-id"] as string;
+
+    if (!authorId) {
+      return res.status(HttpStatusCodes.BAD_REQUEST).json({
+        error: "AUTHOR_ID_REQUIRED",
+        message: "작성자 ID가 필요합니다.",
+      });
+    }
+
+    const updatedPost = await PostService.updatePostStatus(id, status, authorId);
+
+    res.status(HttpStatusCodes.OK).json(updatedPost);
   } catch (error) {
     next(error);
   }

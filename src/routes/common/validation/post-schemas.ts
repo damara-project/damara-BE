@@ -33,7 +33,7 @@ export const updatePostSchema = z.object({
     content: z.string().min(1).optional(),
     price: z.number().positive().optional(),
     minParticipants: z.number().int().positive().optional(),
-    status: z.enum(["open", "closed", "cancelled"]).optional(),
+    status: z.enum(["open", "closed", "in_progress", "completed", "cancelled"]).optional(),
     deadline: z
       .string()
       .refine((val) => !val || !isNaN(Date.parse(val)), {

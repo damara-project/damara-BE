@@ -6,6 +6,7 @@ import {
   getPostById,
   createPost,
   updatePost,
+  updatePostStatus,
   deletePost,
   joinPost,
   leavePost,
@@ -224,7 +225,7 @@ postRouter.post("/", createPost);
  *                     type: integer
  *                   status:
  *                     type: string
- *                     enum: [open, closed, cancelled]
+ *                     enum: [open, closed, in_progress, completed, cancelled]
  *                   deadline:
  *                     type: string
  *                     format: date-time
@@ -255,6 +256,75 @@ postRouter.post("/", createPost);
  */
 // PUT /api/posts/:id - 상품 수정
 postRouter.put("/:id", updatePost);
+
+/**
+ * @swagger
+ * /api/posts/{id}/status:
+ *   patch:
+ *     summary: 게시글 상태 변경 (작성자만 가능)
+ *     tags: [Posts]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 게시글 UUID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - status
+ *               - authorId
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [open, closed, in_progress, completed, cancelled]
+ *                 description: 변경할 상태
+ *                 example: "closed"
+ *               authorId:
+ *                 type: string
+ *                 format: uuid
+ *                 description: 작성자 UUID (권한 확인용)
+ *                 example: "a87522bd-bc79-47b0-a73f-46ea4068a158"
+ *           example:
+ *             status: "closed"
+ *             authorId: "a87522bd-bc79-47b0-a73f-46ea4068a158"
+ *     responses:
+ *       200:
+ *         description: 상태 변경 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Post'
+ *       400:
+ *         description: 잘못된 상태 전이 또는 요청 데이터
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: 권한 없음 (작성자가 아님)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "UNAUTHORIZED"
+ *                 message:
+ *                   type: string
+ *                   example: "작성자만 상태를 변경할 수 있습니다."
+ *       404:
+ *         description: 게시글을 찾을 수 없음
+ */
+// PATCH /api/posts/:id/status - 게시글 상태 변경 (작성자만 가능)
+postRouter.patch("/:id/status", updatePostStatus);
 
 /**
  * @swagger

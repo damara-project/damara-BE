@@ -20,7 +20,7 @@ export interface PostAttributes {
   price: number;
   minParticipants: number; // 최소 인원 수
   currentQuantity: number;
-  status: "open" | "closed" | "cancelled";
+  status: "open" | "closed" | "in_progress" | "completed" | "cancelled";
   deadline: Date;
   pickupLocation: string | null;
   category: string | null; // 카테고리 ID (food, daily, beauty, electronics, school, freemarket)
@@ -59,7 +59,7 @@ export class PostModel
   public price!: number;
   public minParticipants!: number;
   public currentQuantity!: number;
-  public status!: "open" | "closed" | "cancelled";
+  public status!: "open" | "closed" | "in_progress" | "completed" | "cancelled";
   public deadline!: Date;
   public pickupLocation!: string | null;
   public category!: string | null;
@@ -120,7 +120,13 @@ PostModel.init(
     },
 
     status: {
-      type: DataTypes.ENUM("open", "closed", "cancelled"),
+      type: DataTypes.ENUM(
+        "open",
+        "closed",
+        "in_progress",
+        "completed",
+        "cancelled"
+      ),
       allowNull: false,
       defaultValue: "open",
     },

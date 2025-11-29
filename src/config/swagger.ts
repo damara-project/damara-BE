@@ -142,8 +142,8 @@ const options: swaggerJsdoc.Options = {
             },
             status: {
               type: "string",
-              enum: ["open", "closed", "cancelled"],
-              description: "상품 상태",
+              enum: ["open", "closed", "in_progress", "completed", "cancelled"],
+              description: "상품 상태 (open: 모집중, closed: 모집완료, in_progress: 진행중, completed: 거래완료, cancelled: 취소됨)",
               example: "open",
             },
             deadline: {

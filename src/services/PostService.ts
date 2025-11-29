@@ -65,6 +65,99 @@ export const PostService = {
   },
 
   /**
+   * 게시글 상태 변경
+   * - 작성자만 변경 가능
+   * - 상태 전이 규칙 적용 (선택사항)
+   * - 상태 변경 시 신뢰점수 업데이트
+   */
+  async updatePostStatus(
+    id: string,
+    newStatus: "open" | "closed" | "in_progress" | "completed" | "cancelled",
+    authorId: string
+  ) {
+    const post = await PostRepo.findById(id);
+    if (!post) {
+      throw new RouteError(HttpStatusCodes.NOT_FOUND, "POST_NOT_FOUND");
+    }
+
+    // 작성자 권한 체크
+    if (post.authorId !== authorId) {
+      throw new RouteError(
+        HttpStatusCodes.FORBIDDEN,
+        "작성자만 상태를 변경할 수 있습니다."
+      );
+    }
+
+    // 상태 전이 규칙 적용 (선택사항)
+    // 주석 처리하면 모든 상태 간 자유롭게 변경 가능
+    const ENABLE_STATUS_TRANSITION_RULES = true; // false로 변경하면 규칙 비활성화
+
+    if (ENABLE_STATUS_TRANSITION_RULES) {
+      const validTransitions: Record<string, string[]> = {
+        open: ["closed", "cancelled"],
+        closed: ["in_progress", "cancelled"],
+        in_progress: ["completed", "cancelled"],
+        completed: [], // 변경 불가
+        cancelled: [], // 변경 불가
+      };
+
+      const currentStatus = post.status;
+      const allowedStatuses = validTransitions[currentStatus] || [];
+
+      // completed나 cancelled 상태에서는 변경 불가
+      if (currentStatus === "completed" || currentStatus === "cancelled") {
+        throw new RouteError(
+          HttpStatusCodes.BAD_REQUEST,
+          `${currentStatus} 상태에서는 상태를 변경할 수 없습니다.`
+        );
+      }
+
+      // 상태 전이 규칙 체크
+      if (allowedStatuses.length > 0 && !allowedStatuses.includes(newStatus)) {
+        throw new RouteError(
+          HttpStatusCodes.BAD_REQUEST,
+          `${currentStatus} 상태에서 ${newStatus} 상태로 변경할 수 없습니다. 가능한 상태: ${allowedStatuses.join(", ")}`
+        );
+      }
+    }
+
+    // 상태 업데이트
+    const updatedPost = await PostRepo.update(id, { status: newStatus });
+    const newPost = updatedPost?.get();
+
+    // 상태 변경 시 신뢰점수 업데이트 (기존 로직 재사용)
+    if (newStatus === "closed") {
+      // 공동구매 완료: 주최자 +10점, 참여자 +5점
+      try {
+        await UserService.updateTrustScore(post.authorId, 10);
+      } catch (error) {
+        console.error("Failed to update trust score for author:", error);
+      }
+
+      const participants = await PostParticipantRepo.findByPostId(id);
+      for (const participant of participants) {
+        try {
+          await UserService.updateTrustScore(participant.userId, 5);
+        } catch (error) {
+          console.error(
+            `Failed to update trust score for participant ${participant.userId}:`,
+            error
+          );
+        }
+      }
+    } else if (newStatus === "cancelled") {
+      // 공동구매 취소: 주최자 -5점
+      try {
+        await UserService.updateTrustScore(post.authorId, -5);
+      } catch (error) {
+        console.error("Failed to update trust score for author:", error);
+      }
+    }
+
+    return newPost;
+  },
+
+  /**
    * 부분 업데이트
    * - status가 closed 또는 cancelled로 변경될 때 신뢰점수 업데이트
    */
