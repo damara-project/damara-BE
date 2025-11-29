@@ -7,6 +7,7 @@
 import express from "express";
 import { Request, Response, NextFunction } from "express";
 import path from "path";
+import morgan from "morgan";
 import logger from "jet-logger";
 import BaseRouter from "./routes";
 import Paths from "./common/constants/Paths";
@@ -53,6 +54,13 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   }
   next();
 });
+
+/**
+ * ---------------------------------------------------------------------------
+ * HTTP Request Logger (morgan)
+ * ---------------------------------------------------------------------------
+ */
+app.use(morgan("combined")); // Apache combined log format
 
 /**
  * ---------------------------------------------------------------------------
@@ -133,6 +141,28 @@ setupSwagger(app);
  * ---------------------------------------------------------------------------
  */
 app.use(Paths.Base, BaseRouter);
+
+// 디버깅: 등록된 라우트 확인 (개발 환경에서만)
+if (ENV.NodeEnv === "development") {
+  logger.info("=== 등록된 라우트 확인 ===");
+  // Express의 라우트 스택을 확인하기 위해 서버 시작 후 로깅
+  process.nextTick(() => {
+    const routes: string[] = [];
+    app._router?.stack?.forEach((middleware: any) => {
+      if (middleware.route) {
+        routes.push(`${Object.keys(middleware.route.methods).join(", ").toUpperCase()} ${middleware.route.path}`);
+      } else if (middleware.name === "router") {
+        middleware.handle?.stack?.forEach((handler: any) => {
+          if (handler.route) {
+            routes.push(`${Object.keys(handler.route.methods).join(", ").toUpperCase()} ${middleware.regexp.source}${handler.route.path}`);
+          }
+        });
+      }
+    });
+    logger.info(`등록된 라우트 수: ${routes.length}`);
+    routes.forEach((route) => logger.info(`  - ${route}`));
+  });
+}
 
 /**
  * ---------------------------------------------------------------------------

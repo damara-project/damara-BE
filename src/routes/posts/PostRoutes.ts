@@ -22,6 +22,10 @@ import {
 
 const postRouter = Router();
 
+// 디버깅: 라우트 등록 확인
+import logger from "jet-logger";
+logger.info("PostRoutes: 라우터 초기화됨");
+
 /**
  * @swagger
  * /api/posts:
@@ -329,7 +333,9 @@ postRouter.put("/:id", updatePost);
  *         description: 게시글을 찾을 수 없음
  */
 // PATCH /api/posts/:id/status - 게시글 상태 변경 (작성자만 가능)
+// 중요: 이 라우트는 /:id 라우트보다 먼저 정의되어야 함 (더 구체적인 라우트 우선)
 postRouter.patch("/:id/status", updatePostStatus);
+logger.info("✓ PATCH /api/posts/:id/status 라우트 등록됨");
 
 /**
  * @swagger
