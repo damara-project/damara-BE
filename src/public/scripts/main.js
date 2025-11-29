@@ -8,6 +8,8 @@
 const API_BASE_POSTS = "/api/posts";
 const API_BASE_USERS = "/api/users";
 const API_BASE_UPLOAD = "/api/upload";
+const API_BASE_NOTIFICATIONS = "/api/notifications";
+const API_BASE_CHAT = "/api/chat";
 
 let handlebarsHelpersRegistered = false;
 
@@ -40,6 +42,18 @@ function ensureHandlebarsHelpers() {
       return value;
     }
     return num.toLocaleString("ko-KR");
+  });
+
+  Handlebars.registerHelper("categoryName", function (category) {
+    const categoryMap = {
+      food: "먹거리",
+      daily: "일상용품",
+      beauty: "뷰티·패션",
+      electronics: "전자기기",
+      school: "학용품",
+      freemarket: "프리마켓",
+    };
+    return categoryMap[category] || category || "";
   });
 
   handlebarsHelpersRegistered = true;
@@ -185,6 +199,18 @@ function updateUIForLoggedInUser() {
   if (currentUserNickname)
     currentUserNickname.textContent = currentUser.nickname;
   if (currentUserEmail) currentUserEmail.textContent = currentUser.email;
+
+  // 신뢰점수 표시
+  const trustScoreDisplay = document.getElementById("trust-score-display");
+  if (trustScoreDisplay && currentUser.trustScore !== undefined) {
+    trustScoreDisplay.textContent = `신뢰점수: ${currentUser.trustScore}점`;
+    trustScoreDisplay.classList.remove("d-none");
+  }
+
+  // 알림 로드
+  if (currentUser.id) {
+    loadNotifications(currentUser.id);
+  }
 }
 
 /**
@@ -298,51 +324,91 @@ function updatePostCardParticipationStatus(postId, isParticipant) {
  * 게시글 카드의 작성자 전용 UI 업데이트
  */
 function updatePostCardForAuthor(postId, isAuthor) {
-  const joinBtn = document.querySelector(
-    `.join-post-btn[data-post-id="${postId}"]`
-  );
-  const cancelBtn = document.querySelector(
-    `.cancel-join-post-btn[data-post-id="${postId}"]`
-  );
-  const joinedBtn = document.querySelector(
-    `.joined-post-btn[data-post-id="${postId}"]`
-  );
   const manageBtn = document.querySelector(
     `.manage-post-btn[data-post-id="${postId}"]`
   );
+  const normalUserActions = document.querySelector(
+    `.normal-user-actions[data-post-id="${postId}"]`
+  );
 
   if (isAuthor) {
-    if (joinBtn) joinBtn.classList.add("d-none");
-    if (cancelBtn) cancelBtn.classList.add("d-none");
-    if (joinedBtn) joinedBtn.classList.add("d-none");
+    // 작성자: 관리하기 버튼만 표시
     if (manageBtn) manageBtn.classList.remove("d-none");
-  } else if (manageBtn) {
-    manageBtn.classList.add("d-none");
+    if (normalUserActions) normalUserActions.classList.add("d-none");
+  } else {
+    // 일반 사용자: 상세보기, 참여하기, 관심 등록 표시
+    if (manageBtn) manageBtn.classList.add("d-none");
+    if (normalUserActions) normalUserActions.classList.remove("d-none");
   }
 }
 
 /**
  * 공동구매 상품 목록 조회 및 렌더링
  */
-async function loadPosts() {
+async function loadPosts(category = null) {
   try {
-    const templateElement = document.getElementById("posts-template");
-    const gridElement = document.getElementById("posts-grid");
+    // DOM 요소를 여러 번 시도해서 찾기
+    let templateElement = document.getElementById("posts-template");
+    let gridElement = document.getElementById("posts-grid");
+
+    // DOM 요소가 없으면 최대 10번까지 재시도 (더 긴 대기 시간)
+    let retryCount = 0;
+    const maxRetries = 10;
+
+    while ((!templateElement || !gridElement) && retryCount < maxRetries) {
+      console.warn(
+        `DOM 요소를 찾지 못함. 재시도 ${retryCount + 1}/${maxRetries}...`,
+        {
+          templateElement: !!templateElement,
+          gridElement: !!gridElement,
+        }
+      );
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      templateElement = document.getElementById("posts-template");
+      gridElement = document.getElementById("posts-grid");
+      retryCount++;
+    }
 
     // DOM 요소가 존재하는지 확인
     if (!templateElement || !gridElement) {
-      console.error("Required DOM elements not found");
+      console.error("Required DOM elements not found after retries", {
+        templateElement: !!templateElement,
+        gridElement: !!gridElement,
+        allScripts: document.querySelectorAll("script").length,
+        allTemplates: document.querySelectorAll("[id*='template']").length,
+        postsGridExists: !!document.getElementById("posts-grid"),
+      });
+      showToast(
+        "페이지 요소를 찾을 수 없습니다. 페이지를 새로고침해주세요.",
+        "error"
+      );
       return;
     }
 
-    const response = await fetch(API_BASE_POSTS);
+    console.log("DOM 요소 찾기 성공:", {
+      templateElement: !!templateElement,
+      gridElement: !!gridElement,
+    });
+
+    const url =
+      category && category !== null && category !== "" && category !== undefined
+        ? `${API_BASE_POSTS}?category=${encodeURIComponent(category)}`
+        : API_BASE_POSTS;
+
+    console.log("loadPosts 호출, category:", category, "URL:", url);
+    const response = await fetch(url);
     if (!response.ok) {
+      console.error("API 응답 오류:", response.status, response.statusText);
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const posts = await response.json();
+    console.log("받은 게시글 수:", posts.length, "카테고리:", category);
 
     ensureHandlebarsHelpers();
     const template = Handlebars.compile(templateElement.innerHTML);
+
+    // 백엔드에서 이미 필터링된 결과를 받았으므로 그대로 사용
+    console.log("표시할 게시글 수:", posts.length);
     gridElement.innerHTML = template({ posts });
 
     // 각 게시글에 대해 작성자/참여 여부 확인 및 UI 업데이트
@@ -354,17 +420,31 @@ async function loadPosts() {
           .map((post) => post.id)
       );
 
+      // 작성자 게시글 처리
       authoredPostIds.forEach((postId) => {
         updatePostCardForAuthor(postId, true);
       });
 
-      const openPosts = posts.filter(
-        (post) => post.status === "open" && !authoredPostIds.has(post.id)
+      // 일반 사용자 게시글 처리
+      const normalUserPosts = posts.filter(
+        (post) => !authoredPostIds.has(post.id)
       );
-      for (const post of openPosts) {
-        const isParticipant = await checkParticipationStatus(post.id);
-        updatePostCardParticipationStatus(post.id, isParticipant);
+      for (const post of normalUserPosts) {
+        updatePostCardForAuthor(post.id, false);
+
+        if (post.status === "open") {
+          const isParticipant = await checkParticipationStatus(post.id);
+          updatePostCardParticipationStatus(post.id, isParticipant);
+
+          // 관심 여부 확인
+          loadFavoriteStatus(post.id, currentUserId);
+        }
       }
+    } else {
+      // 로그인하지 않은 사용자: 모든 게시글에 일반 사용자 액션 표시
+      posts.forEach((post) => {
+        updatePostCardForAuthor(post.id, false);
+      });
     }
   } catch (error) {
     console.error("Error loading posts:", error);
@@ -725,6 +805,16 @@ if (createPostForm) {
 
     const deadlineISO = deadline ? new Date(deadline).toISOString() : null;
 
+    // 카테고리 값 가져오기 및 정규화 (빈 문자열을 null로)
+    const categoryRaw = document.getElementById("post-category")?.value;
+    const category =
+      categoryRaw && categoryRaw.trim() !== "" ? categoryRaw.trim() : null;
+
+    console.log("상품 등록 - 카테고리:", {
+      원본값: categoryRaw,
+      정규화됨: category,
+    });
+
     const postData = {
       post: {
         authorId: currentUser.id,
@@ -734,6 +824,7 @@ if (createPostForm) {
         minParticipants,
         deadline: deadlineISO,
         ...(pickupLocation && { pickupLocation }),
+        ...(category && { category }),
         ...(imageUrls.length > 0 && { images: imageUrls }),
       },
     };
@@ -781,7 +872,8 @@ if (createPostForm) {
  */
 async function openPostDetail(postId) {
   try {
-    const response = await fetch(`${API_BASE_POSTS}/${postId}`);
+    const userId = currentUser?.id ? `?userId=${currentUser.id}` : "";
+    const response = await fetch(`${API_BASE_POSTS}/${postId}${userId}`);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -803,12 +895,20 @@ async function openPostDetail(postId) {
       imagesHTML += "</div></div>";
     }
 
-    const statusBadge =
-      {
-        open: '<span class="badge bg-success">모집중</span>',
-        closed: '<span class="badge bg-secondary">마감</span>',
-        cancelled: '<span class="badge bg-danger">취소됨</span>',
-      }[post.status] || "";
+    const statusBadgeMap = {
+      open: '<span class="badge bg-success">모집중</span>',
+      closed: '<span class="badge bg-secondary">모집완료</span>',
+      in_progress: '<span class="badge bg-info">진행중</span>',
+      completed: '<span class="badge bg-primary">거래완료</span>',
+      cancelled: '<span class="badge bg-danger">취소됨</span>',
+    };
+    const statusBadge = statusBadgeMap[post.status] || "";
+
+    // 관심 여부 확인
+    let isFavorite = false;
+    if (currentUser && currentUser.id && post.isFavorite !== undefined) {
+      isFavorite = post.isFavorite;
+    }
 
     const formatDate = (dateString) => {
       if (!dateString) return "";
@@ -847,11 +947,52 @@ async function openPostDetail(postId) {
     let actionSection = "";
     if (isAuthor && currentUser) {
       const chatLink = buildChatLink();
+      const statusOptions = {
+        open: ["closed", "cancelled"],
+        closed: ["in_progress", "cancelled"],
+        in_progress: ["completed", "cancelled"],
+        completed: [],
+        cancelled: [],
+      };
+      const availableStatuses = statusOptions[post.status] || [];
+
+      let statusChangeSection = "";
+      if (availableStatuses.length > 0) {
+        const statusLabels = {
+          closed: "모집완료",
+          in_progress: "진행중",
+          completed: "거래완료",
+          cancelled: "취소",
+        };
+        statusChangeSection = `
+          <div class="mb-3">
+            <label class="form-label"><strong>게시글 상태 변경</strong></label>
+            <div class="btn-group w-100" role="group">
+              ${availableStatuses
+                .map(
+                  (status) => `
+                <button
+                  type="button"
+                  class="btn btn-outline-primary post-status-change-btn"
+                  data-post-id="${post.id}"
+                  data-status="${status}"
+                >
+                  ${statusLabels[status]}
+                </button>
+              `
+                )
+                .join("")}
+            </div>
+          </div>
+        `;
+      }
+
       actionSection = `
         <div class="border-top pt-3 mt-3">
           <div class="alert alert-primary mb-3" role="alert">
             작성자 전용 관리 메뉴입니다. 채팅방에서 참여자와 소통하세요.
           </div>
+          ${statusChangeSection}
           <div class="d-grid gap-2">
             <a href="${chatLink}"
                class="btn btn-info w-100 text-white fw-bold"
@@ -884,10 +1025,20 @@ async function openPostDetail(postId) {
           </div>
         `;
       } else {
+        const favoriteBtnClass = isFavorite
+          ? "btn-danger"
+          : "btn-outline-danger";
+        const favoriteBtnText = isFavorite
+          ? "<span>❤️</span> 관심 해제"
+          : "<span>🤍</span> 관심 등록";
+
         actionSection = `
           <div class="border-top pt-3 mt-3">
-            <button class="btn btn-success w-100 fw-bold join-post-btn-detail" data-post-id="${post.id}" style="font-size: 1.1rem; padding: 12px;">
+            <button class="btn btn-success w-100 fw-bold join-post-btn-detail mb-2" data-post-id="${post.id}" style="font-size: 1.1rem; padding: 12px;">
               참여하기
+            </button>
+            <button class="btn ${favoriteBtnClass} w-100 favorite-btn mb-2" data-post-id="${post.id}">
+              ${favoriteBtnText}
             </button>
             <div class="d-none joined-status-container" data-post-id="${post.id}">
               <div class="d-flex align-items-center justify-content-center mb-3 p-2 rounded" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
@@ -915,6 +1066,16 @@ async function openPostDetail(postId) {
           <p><strong>상태:</strong> ${statusBadge}</p>
           <p><strong>최소 인원:</strong> ${post.minParticipants}명</p>
           <p><strong>현재 인원:</strong> ${post.currentQuantity}명</p>
+          ${
+            post.favoriteCount !== undefined
+              ? `<p><strong>관심 수:</strong> ${post.favoriteCount}개</p>`
+              : ""
+          }
+          ${
+            post.category
+              ? `<p><strong>카테고리:</strong> ${post.category}</p>`
+              : ""
+          }
         </div>
         <div class="col-md-6">
           <p><strong>마감일:</strong> ${formatDate(post.deadline)}</p>
@@ -1321,10 +1482,457 @@ document.addEventListener("click", async (e) => {
     const userId = e.target.getAttribute("data-user-id") || currentUser.id;
     handleLeavePost(postId, userId, e.target, true);
   }
+
+  // 카테고리 필터 버튼은 이벤트 위임으로 처리 (DOMContentLoaded에서 설정됨)
+
+  // 관심 등록/해제 버튼
+  if (e.target.classList.contains("favorite-btn")) {
+    if (!currentUser) {
+      showToast("로그인이 필요합니다.", "warning");
+      return;
+    }
+    const postId = e.target.getAttribute("data-post-id");
+    toggleFavorite(postId, currentUser.id);
+  }
+
+  // 알림 아이콘 클릭
+  if (e.target.closest("#notification-icon")) {
+    if (!currentUser) {
+      showToast("로그인이 필요합니다.", "warning");
+      return;
+    }
+    const modal = new bootstrap.Modal(
+      document.getElementById("notification-modal")
+    );
+    modal.show();
+  }
+
+  // 알림 읽음 처리
+  if (e.target.closest(".notification-item")) {
+    const notificationId = e.target
+      .closest(".notification-item")
+      .getAttribute("data-notification-id");
+    if (currentUser && notificationId) {
+      markNotificationAsRead(notificationId, currentUser.id);
+    }
+  }
+
+  // 모든 알림 읽음 처리
+  if (e.target.id === "mark-all-read-btn") {
+    if (currentUser) {
+      markAllNotificationsAsRead(currentUser.id);
+    }
+  }
+
+  // 게시글 상태 변경
+  if (e.target.classList.contains("post-status-change-btn")) {
+    if (!currentUser) {
+      showToast("로그인이 필요합니다.", "warning");
+      return;
+    }
+    const postId = e.target.getAttribute("data-post-id");
+    const newStatus = e.target.getAttribute("data-status");
+    updatePostStatus(postId, newStatus, currentUser.id);
+  }
+
+  // 프로필 이미지 업로드
+  if (e.target.id === "profile-image-upload-input") {
+    const file = e.target.files[0];
+    if (file && currentUser) {
+      uploadProfileImage(file, currentUser.id);
+    }
+  }
 });
 
+// ============================================================================
+// 카테고리 필터링 기능
+// ============================================================================
+// 카테고리 필터 상태 관리
+let selectedCategory = null;
+
+function handleCategoryFilter(category) {
+  console.log("카테고리 필터 클릭:", category);
+
+  // 빈 문자열을 undefined로 변환 (전체 카테고리)
+  const filterCategory =
+    category === "" || category === null || category === undefined
+      ? undefined
+      : String(category).trim();
+  selectedCategory = filterCategory;
+
+  console.log("필터 카테고리:", filterCategory);
+  const apiUrl = filterCategory
+    ? `${API_BASE_POSTS}?category=${encodeURIComponent(filterCategory)}`
+    : API_BASE_POSTS;
+  console.log("API 호출 URL:", apiUrl);
+
+  // 게시글 로드
+  loadPosts(filterCategory);
+
+  // 카테고리 버튼 활성화 상태 업데이트
+  document.querySelectorAll(".category-filter-btn").forEach((btn) => {
+    const btnCategory = btn.getAttribute("data-category");
+    const isActive =
+      (filterCategory === undefined &&
+        (btnCategory === "" || btnCategory === null)) ||
+      (filterCategory !== undefined &&
+        String(btnCategory) === String(filterCategory));
+
+    if (isActive) {
+      btn.style.background = "var(--primary)";
+      btn.style.borderColor = "var(--primary)";
+      btn.style.color = "var(--white)";
+      btn.style.fontWeight = "600";
+    } else {
+      btn.style.background = "var(--white)";
+      btn.style.borderColor = "var(--border-medium)";
+      btn.style.color = "var(--text-secondary)";
+      btn.style.fontWeight = "400";
+    }
+  });
+}
+
+// ============================================================================
+// 관심 상품 기능
+// ============================================================================
+async function toggleFavorite(postId, userId) {
+  try {
+    // 먼저 관심 여부 확인
+    const checkResponse = await fetch(
+      `${API_BASE_POSTS}/${postId}/favorite/${userId}`
+    );
+    const checkData = await checkResponse.json();
+    const isFavorite = checkData.isFavorite;
+
+    if (isFavorite) {
+      // 관심 해제
+      const response = await fetch(
+        `${API_BASE_POSTS}/${postId}/favorite/${userId}`,
+        { method: "DELETE" }
+      );
+      if (response.ok) {
+        showToast("관심 해제되었습니다.", "info");
+        updateFavoriteButton(postId, false);
+      }
+    } else {
+      // 관심 등록
+      const response = await fetch(`${API_BASE_POSTS}/${postId}/favorite`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      });
+      if (response.ok) {
+        showToast("관심 상품으로 등록되었습니다.", "success");
+        updateFavoriteButton(postId, true);
+      }
+    }
+  } catch (error) {
+    console.error("Error toggling favorite:", error);
+    showToast("관심 등록/해제 중 오류가 발생했습니다.", "error");
+  }
+}
+
+function updateFavoriteButton(postId, isFavorite) {
+  const favoriteBtn = document.querySelector(
+    `.favorite-btn[data-post-id="${postId}"]`
+  );
+  if (favoriteBtn) {
+    if (isFavorite) {
+      favoriteBtn.innerHTML = "<span>❤️</span> 관심 해제";
+      favoriteBtn.classList.remove("btn-outline-danger");
+      favoriteBtn.classList.add("btn-danger");
+    } else {
+      favoriteBtn.innerHTML = "<span>🤍</span> 관심 등록";
+      favoriteBtn.classList.remove("btn-danger");
+      favoriteBtn.classList.add("btn-outline-danger");
+    }
+  }
+}
+
+async function loadFavoriteStatus(postId, userId) {
+  try {
+    const response = await fetch(
+      `${API_BASE_POSTS}/${postId}/favorite/${userId}`
+    );
+    if (response.ok) {
+      const data = await response.json();
+      updateFavoriteButton(postId, data.isFavorite);
+    }
+  } catch (error) {
+    console.error("Error loading favorite status:", error);
+  }
+}
+
+// ============================================================================
+// 알림 기능
+// ============================================================================
+let notifications = [];
+let unreadCount = 0;
+
+async function loadNotifications(userId) {
+  try {
+    const response = await fetch(
+      `${API_BASE_NOTIFICATIONS}?userId=${userId}&limit=20&offset=0`
+    );
+    if (response.ok) {
+      const data = await response.json();
+      notifications = data.notifications || [];
+      unreadCount = data.unreadCount || 0;
+      updateNotificationBadge();
+      renderNotifications();
+    }
+  } catch (error) {
+    console.error("Error loading notifications:", error);
+  }
+}
+
+function updateNotificationBadge() {
+  const badge = document.getElementById("notification-badge");
+  const unreadCountDisplay = document.getElementById("unread-count-display");
+  if (badge) {
+    if (unreadCount > 0) {
+      badge.textContent = unreadCount;
+      badge.classList.remove("d-none");
+    } else {
+      badge.classList.add("d-none");
+    }
+  }
+  if (unreadCountDisplay) {
+    unreadCountDisplay.textContent = unreadCount;
+  }
+}
+
+function renderNotifications() {
+  const container = document.getElementById("notifications-list");
+  if (!container) return;
+
+  if (notifications.length === 0) {
+    container.innerHTML =
+      '<div class="text-center text-muted p-3">알림이 없습니다.</div>';
+    return;
+  }
+
+  const html = notifications
+    .map(
+      (notif) => `
+    <div class="notification-item p-3 border-bottom ${
+      notif.isRead ? "" : "bg-light"
+    }" data-notification-id="${notif.id}">
+      <div class="d-flex justify-content-between align-items-start">
+        <div class="flex-grow-1">
+          <h6 class="mb-1">${notif.title}</h6>
+          <p class="mb-1 small text-muted">${notif.message}</p>
+          <small class="text-muted">${new Date(notif.createdAt).toLocaleString(
+            "ko-KR"
+          )}</small>
+        </div>
+        ${!notif.isRead ? '<span class="badge bg-primary">새</span>' : ""}
+      </div>
+    </div>
+  `
+    )
+    .join("");
+  container.innerHTML = html;
+}
+
+async function markNotificationAsRead(notificationId, userId) {
+  try {
+    const response = await fetch(
+      `${API_BASE_NOTIFICATIONS}/${notificationId}/read`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      }
+    );
+    if (response.ok) {
+      await loadNotifications(userId);
+    }
+  } catch (error) {
+    console.error("Error marking notification as read:", error);
+  }
+}
+
+async function markAllNotificationsAsRead(userId) {
+  try {
+    const response = await fetch(`${API_BASE_NOTIFICATIONS}/read-all`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId }),
+    });
+    if (response.ok) {
+      await loadNotifications(userId);
+      showToast("모든 알림을 읽음 처리했습니다.", "success");
+    }
+  } catch (error) {
+    console.error("Error marking all notifications as read:", error);
+  }
+}
+
+// ============================================================================
+// 게시글 상태 변경 기능
+// ============================================================================
+async function updatePostStatus(postId, newStatus, authorId) {
+  try {
+    const response = await fetch(`${API_BASE_POSTS}/${postId}/status`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: newStatus, authorId }),
+    });
+
+    if (response.ok) {
+      showToast("게시글 상태가 변경되었습니다.", "success");
+      loadPosts(selectedCategory);
+      // 모달이 열려있으면 닫기
+      const modal = bootstrap.Modal.getInstance(
+        document.getElementById("post-detail-modal")
+      );
+      if (modal) modal.hide();
+    } else {
+      const error = await response.json();
+      showToast(error.message || "상태 변경에 실패했습니다.", "error");
+    }
+  } catch (error) {
+    console.error("Error updating post status:", error);
+    showToast("상태 변경 중 오류가 발생했습니다.", "error");
+  }
+}
+
+// ============================================================================
+// 관심목록 기능
+// ============================================================================
+async function loadFavorites(userId) {
+  try {
+    const response = await fetch(
+      `${API_BASE_USERS}/${userId}/favorites?limit=50&offset=0`
+    );
+
+    if (!response.ok) {
+      throw new Error("관심목록을 불러오는 데 실패했습니다.");
+    }
+
+    const data = await response.json();
+    const favorites = data.favorites || [];
+    const favoritesListElement = document.getElementById("favorites-list");
+    const noFavoritesElement = document.getElementById("no-favorites");
+
+    if (favorites.length === 0) {
+      favoritesListElement.innerHTML = "";
+      noFavoritesElement.classList.remove("d-none");
+      return;
+    }
+
+    noFavoritesElement.classList.add("d-none");
+
+    // Handlebars 템플릿 렌더링
+    const template = Handlebars.compile(
+      document.getElementById("favorites-template").innerHTML
+    );
+    favoritesListElement.innerHTML = template({ favorites });
+  } catch (error) {
+    console.error("Error loading favorites:", error);
+    showToast("관심목록을 불러오는 중 오류가 발생했습니다.", "error");
+  }
+}
+
+async function handleRemoveFavorite(postId, userId) {
+  try {
+    const response = await fetch(
+      `${API_BASE_POSTS}/${postId}/favorite/${userId}`,
+      {
+        method: "DELETE",
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("관심 해제에 실패했습니다.");
+    }
+
+    showToast("관심 해제되었습니다.", "success");
+
+    // 관심목록 다시 로드
+    await loadFavorites(userId);
+
+    // 메인 페이지의 관심 버튼 상태도 업데이트
+    if (currentUser && currentUser.id === userId) {
+      loadFavoriteStatus(postId, userId);
+    }
+  } catch (error) {
+    console.error("Error removing favorite:", error);
+    showToast("관심 해제 중 오류가 발생했습니다.", "error");
+  }
+}
+
+// ============================================================================
+// 프로필 이미지 업로드 기능
+// ============================================================================
+async function uploadProfileImage(file, userId) {
+  try {
+    const formData = new FormData();
+    formData.append("image", file);
+
+    const response = await fetch(`${API_BASE_UPLOAD}/image`, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error("이미지 업로드 실패");
+    }
+
+    const data = await response.json();
+    const imageUrl = data.url;
+
+    // 사용자 정보 업데이트
+    const updateResponse = await fetch(`${API_BASE_USERS}/${userId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user: { avatarUrl: imageUrl },
+      }),
+    });
+
+    if (updateResponse.ok) {
+      const updatedUser = await updateResponse.json();
+      saveUserToStorage(updatedUser);
+      showToast("프로필 이미지가 업데이트되었습니다.", "success");
+      return imageUrl;
+    } else {
+      throw new Error("프로필 업데이트 실패");
+    }
+  } catch (error) {
+    console.error("Error uploading profile image:", error);
+    showToast("프로필 이미지 업로드 중 오류가 발생했습니다.", "error");
+    return null;
+  }
+}
+
 // 페이지 로드 시 초기화
+// 관심목록 모달 이벤트 리스너
+document.addEventListener("DOMContentLoaded", () => {
+  const favoritesModal = document.getElementById("favorites-modal");
+  if (favoritesModal) {
+    favoritesModal.addEventListener("show.bs.modal", () => {
+      if (currentUser && currentUser.id) {
+        loadFavorites(currentUser.id);
+      } else {
+        showToast("로그인이 필요합니다.", "warning");
+        const modalInstance =
+          window.bootstrap?.Modal?.getInstance(favoritesModal);
+        if (modalInstance) {
+          modalInstance.hide();
+        }
+      }
+    });
+  }
+});
+
 window.addEventListener("DOMContentLoaded", () => {
   loadUserFromStorage();
-  loadPosts();
+
+  // DOM이 완전히 로드될 때까지 약간의 지연 (template 요소가 로드되도록)
+  setTimeout(() => {
+    // 초기 로드 (카테고리 필터 없이 전체 조회)
+    loadPosts();
+  }, 200);
 });

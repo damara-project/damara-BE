@@ -37,10 +37,12 @@ export async function getAllPosts(
       ? parseInt(req.query.offset as string, 10)
       : 0;
     const category = req.query.category
-      ? (req.query.category as string)
+      ? String(req.query.category).trim()
       : undefined;
 
+    console.log("getAllPosts - 카테고리 파라미터:", category);
     const posts = await PostService.listPosts(limit, offset, category);
+    console.log("getAllPosts - 반환된 게시글 수:", posts.length);
 
     res.status(HttpStatusCodes.OK).json(posts);
   } catch (error) {
@@ -123,14 +125,27 @@ export async function createPost(
     // deadline과 category를 명시적으로 처리
     const { images = [], deadline, category, ...postData } = post;
 
+    // category 값 정규화 (빈 문자열을 null로, trim 처리)
+    const normalizedCategory =
+      category && String(category).trim() !== ""
+        ? String(category).trim()
+        : null;
+
+    console.log("createPost - 카테고리 처리:", {
+      원본: category,
+      정규화됨: normalizedCategory,
+    });
+
     const createdPost = await PostService.createPost(
       {
         ...postData,
         deadline: new Date(deadline),
-        category: category || null,
+        category: normalizedCategory,
       },
       images
     );
+
+    console.log("createPost - 생성된 게시글 카테고리:", createdPost?.category);
 
     res.status(HttpStatusCodes.CREATED).json(createdPost);
   } catch (error) {
@@ -215,7 +230,7 @@ export async function updatePostStatus(
 
     // Request body에서 authorId 추출 (프론트엔드에서 전달)
     // 또는 세션/토큰에서 authorId 추출 (인증 시스템 구현 시)
-    const authorId = req.body.authorId || req.headers["x-user-id"] as string;
+    const authorId = req.body.authorId || (req.headers["x-user-id"] as string);
 
     if (!authorId) {
       return res.status(HttpStatusCodes.BAD_REQUEST).json({
@@ -224,7 +239,11 @@ export async function updatePostStatus(
       });
     }
 
-    const updatedPost = await PostService.updatePostStatus(id, status, authorId);
+    const updatedPost = await PostService.updatePostStatus(
+      id,
+      status,
+      authorId
+    );
 
     res.status(HttpStatusCodes.OK).json(updatedPost);
   } catch (error) {
