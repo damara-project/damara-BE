@@ -15,6 +15,10 @@ export const createPostSchema = z.object({
     }), // ISO 8601 형식 검증
     pickupLocation: z.string().max(200),
     images: z.array(z.string().min(1)).optional(), // 이미지 URL 배열 (상대 경로 또는 절대 URL 모두 허용)
+    category: z
+      .enum(["food", "daily", "beauty", "electronics", "school", "freemarket"])
+      .optional()
+      .nullable(), // 카테고리 필드 추가
   }),
 });
 
@@ -38,6 +42,10 @@ export const updatePostSchema = z.object({
       .optional(),
     pickupLocation: z.string().max(200).optional(),
     images: z.array(z.string().min(1)).optional(), // 이미지 URL 배열 (상대 경로 또는 절대 URL 모두 허용)
+    category: z
+      .enum(["food", "daily", "beauty", "electronics", "school", "freemarket"])
+      .optional()
+      .nullable(), // 카테고리 필드 추가
   }),
 });
 

@@ -23,6 +23,7 @@ export interface PostAttributes {
   status: "open" | "closed" | "cancelled";
   deadline: Date;
   pickupLocation: string | null;
+  category: string | null; // 카테고리 ID (food, daily, beauty, electronics, school, freemarket)
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -61,6 +62,7 @@ export class PostModel
   public status!: "open" | "closed" | "cancelled";
   public deadline!: Date;
   public pickupLocation!: string | null;
+  public category!: string | null;
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -133,6 +135,13 @@ PostModel.init(
       allowNull: true,
       field: "pickup_location",
     },
+
+    category: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+      defaultValue: null,
+      // 카테고리: food, daily, beauty, electronics, school, freemarket
+    },
   },
 
   {
@@ -143,7 +152,7 @@ PostModel.init(
   }
 );
 
-// ----------------------------
+// ----------------------------2
 // 관계 설정 (Associations)
 // User와 Post의 1:N 관계 설정
 // ----------------------------

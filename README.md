@@ -104,6 +104,15 @@ Run the production build (Must be built first).
 Check for typescript errors.
 
 
+## 주요 기능
+
+### 게시글 카테고리 기능
+게시글에 카테고리 필드를 추가하여 카테고리별 필터링이 가능합니다.
+
+- **지원 카테고리**: `food` (먹거리), `daily` (일상용품), `beauty` (뷰티·패션), `electronics` (전자기기), `school` (학용품), `freemarket` (프리마켓)
+- **API 사용 예시**: `GET /api/posts?category=food`
+- **상세 문서**: [카테고리 기능 문서](./docs/CATEGORY_FEATURE.md)
+
 ## API Documentation (Swagger)
 
 프로젝트에는 Swagger UI가 내장되어 있어 API 문서를 쉽게 확인하고 테스트할 수 있습니다.

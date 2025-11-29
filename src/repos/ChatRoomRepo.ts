@@ -31,9 +31,7 @@ export const ChatRoomRepo = {
       }
       throw e;
     }
-  },
-
-  /**
+  },  /**
    * ID로 채팅방 조회
    */
   async findById(id: string) {

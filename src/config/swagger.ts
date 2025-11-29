@@ -151,6 +151,13 @@ const options: swaggerJsdoc.Options = {
               description: "픽업 장소",
               example: "명지대학교 정문",
             },
+            category: {
+              type: "string",
+              nullable: true,
+              enum: ["food", "daily", "beauty", "electronics", "school", "freemarket"],
+              description: "카테고리 ID (food: 먹거리, daily: 일상용품, beauty: 뷰티·패션, electronics: 전자기기, school: 학용품, freemarket: 프리마켓)",
+              example: "food",
+            },
             images: {
               type: "array",
               items: {

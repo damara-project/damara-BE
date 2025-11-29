@@ -63,9 +63,16 @@ export const PostRepo = {
 
   /**
    * 전체 조회 + pagination (이미지 포함)
+   * category 필터링 지원
    */
-  async list(limit = 20, offset = 0) {
+  async list(limit = 20, offset = 0, category?: string | null) {
+    const whereClause: any = {};
+    if (category) {
+      whereClause.category = category;
+    }
+
     const posts = await PostModel.findAll({
+      where: whereClause,
       include: [
         {
           model: PostImageModel,

@@ -36,9 +36,10 @@ export const PostService = {
 
   /**
    * 전체 조회 + pagination
+   * category 필터링 지원
    */
-  async listPosts(limit = 20, offset = 0) {
-    return await PostRepo.list(limit, offset);
+  async listPosts(limit = 20, offset = 0, category?: string | null) {
+    return await PostRepo.list(limit, offset, category);
   },
 
   /**

@@ -20,7 +20,7 @@ const postRouter = Router();
  * @swagger
  * /api/posts:
  *   get:
- *     summary: 전체 상품 조회 (페이징 가능)
+ *     summary: 전체 상품 조회 (페이징 및 카테고리 필터링 가능)
  *     tags: [Posts]
  *     parameters:
  *       - in: query
@@ -28,11 +28,20 @@ const postRouter = Router();
  *         schema:
  *           type: integer
  *           default: 20
+ *         description: 조회 개수
  *       - in: query
  *         name: offset
  *         schema:
  *           type: integer
  *           default: 0
+ *         description: 시작 위치
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *           enum: [food, daily, beauty, electronics, school, freemarket]
+ *         description: 카테고리 필터 (food: 먹거리, daily: 일상용품, beauty: 뷰티·패션, electronics: 전자기기, school: 학용품, freemarket: 프리마켓)
+ *         example: food
  *     responses:
  *       200:
  *         description: 상품 목록 조회 성공
@@ -144,6 +153,12 @@ postRouter.get("/student/:studentId", getPostsByStudentId);
  *                     maxLength: 200
  *                     example: "명지대학교 정문"
  *                     description: 픽업 장소
+ *                   category:
+ *                     type: string
+ *                     enum: [food, daily, beauty, electronics, school, freemarket]
+ *                     nullable: true
+ *                     example: "food"
+ *                     description: 카테고리 ID (food: 먹거리, daily: 일상용품, beauty: 뷰티·패션, electronics: 전자기기, school: 학용품, freemarket: 프리마켓)
  *                   images:
  *                     type: array
  *                     items:
@@ -160,6 +175,7 @@ postRouter.get("/student/:studentId", getPostsByStudentId);
  *               minParticipants: 2
  *               deadline: "2025-11-27T23:59:59.000Z"
  *               pickupLocation: "명지대학교 정문"
+ *               category: "food"
  *               images: ["https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=400"]
  *     responses:
  *       201:
@@ -195,17 +211,38 @@ postRouter.post("/", createPost);
  *           schema:
  *             type: object
  *             properties:
- *               title:
- *                 type: string
- *               price:
- *                 type: number
- *               deadline:
- *                 type: string
- *                 format: date-time
- *               images:
- *                 type: array
- *                 items:
- *                   type: string
+ *               post:
+ *                 type: object
+ *                 properties:
+ *                   title:
+ *                     type: string
+ *                   content:
+ *                     type: string
+ *                   price:
+ *                     type: number
+ *                   minParticipants:
+ *                     type: integer
+ *                   status:
+ *                     type: string
+ *                     enum: [open, closed, cancelled]
+ *                   deadline:
+ *                     type: string
+ *                     format: date-time
+ *                   pickupLocation:
+ *                     type: string
+ *                   category:
+ *                     type: string
+ *                     enum: [food, daily, beauty, electronics, school, freemarket]
+ *                     nullable: true
+ *                     description: 카테고리 ID
+ *                   images:
+ *                     type: array
+ *                     items:
+ *                       type: string
+ *           example:
+ *             post:
+ *               title: "수정된 제목"
+ *               category: "daily"
  *     responses:
  *       200:
  *         description: 수정 성공

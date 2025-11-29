@@ -14,9 +14,10 @@ import {
 
 /**
  * 공동구매 상품 전체 목록
- * GET /api/posts?limit&offset
+ * GET /api/posts?limit&offset&category
  *
  * - pagination 기본값은 (20, 0)
+ * - category 쿼리 파라미터로 필터링 가능
  * - Service.listPosts로 위임하여 DB 접근을 추상화
  */
 export async function getAllPosts(
@@ -31,8 +32,11 @@ export async function getAllPosts(
     const offset = req.query.offset
       ? parseInt(req.query.offset as string, 10)
       : 0;
+    const category = req.query.category
+      ? (req.query.category as string)
+      : undefined;
 
-    const posts = await PostService.listPosts(limit, offset);
+    const posts = await PostService.listPosts(limit, offset, category);
 
     res.status(HttpStatusCodes.OK).json(posts);
   } catch (error) {

@@ -47,14 +47,22 @@ CREATE TABLE posts (
   status ENUM('open', 'closed', 'cancelled') NOT NULL DEFAULT 'open',
   deadline DATETIME NOT NULL,
   pickup_location VARCHAR(200),
+  category VARCHAR(50) NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE,
   INDEX idx_author_id (author_id),
   INDEX idx_status (status),
+  INDEX idx_category (category),
   INDEX idx_created_at (created_at DESC)
 );
 ```
+
+**카테고리 필드 (2025-11-24 추가)**:
+- `category VARCHAR(50) NULL`: 게시글 카테고리 ID
+  - 가능한 값: `food` (먹거리), `daily` (일상용품), `beauty` (뷰티·패션), `electronics` (전자기기), `school` (학용품), `freemarket` (프리마켓)
+  - 기본값: `NULL` (카테고리 미선택 시)
+  - 인덱스 추가: `idx_category`로 카테고리별 조회 성능 최적화
 
 ### post_images 테이블 (신규)
 ```sql
@@ -78,10 +86,12 @@ CREATE TABLE post_images (
 - `DELETE /api/users/:id` - 회원 삭제
 
 ### Post API
-- `GET /api/posts` - 전체 조회 (페이징, 필터링)
+- `GET /api/posts` - 전체 조회 (페이징, 카테고리 필터링)
+  - Query 파라미터: `limit`, `offset`, `category` (optional)
+  - 예시: `GET /api/posts?category=food&limit=20&offset=0`
 - `GET /api/posts/:id` - 상세 조회
-- `POST /api/posts` - 상품 등록
-- `PUT /api/posts/:id` - 상품 수정
+- `POST /api/posts` - 상품 등록 (카테고리 필드 포함 가능)
+- `PUT /api/posts/:id` - 상품 수정 (카테고리 필드 업데이트 가능)
 - `DELETE /api/posts/:id` - 상품 삭제
 
 ## 4. 파일 구조
