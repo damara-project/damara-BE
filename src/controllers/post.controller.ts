@@ -5,6 +5,7 @@ import { PostService, PostParticipantService } from "../services/PostService";
 import { PostCreationAttributes } from "../models/Post";
 import { parseReq } from "../routes/common/validation/parseReq";
 import HttpStatusCodes from "../common/constants/HttpStatusCodes";
+import logger from "jet-logger";
 import {
   createPostSchema,
   CreatePostReq,
@@ -40,9 +41,9 @@ export async function getAllPosts(
       ? String(req.query.category).trim()
       : undefined;
 
-    console.log("getAllPosts - 카테고리 파라미터:", category);
+    logger.info(`getAllPosts - 카테고리 파라미터: ${category}`);
     const posts = await PostService.listPosts(limit, offset, category);
-    console.log("getAllPosts - 반환된 게시글 수:", posts.length);
+    logger.info(`getAllPosts - 반환된 게시글 수: ${posts.length}`);
 
     res.status(HttpStatusCodes.OK).json(posts);
   } catch (error) {
@@ -131,10 +132,9 @@ export async function createPost(
         ? String(category).trim()
         : null;
 
-    console.log("createPost - 카테고리 처리:", {
-      원본: category,
-      정규화됨: normalizedCategory,
-    });
+    logger.info(
+      `createPost - 카테고리 처리: 원본=${category}, 정규화됨=${normalizedCategory}`
+    );
 
     const createdPost = await PostService.createPost(
       {
@@ -145,7 +145,9 @@ export async function createPost(
       images
     );
 
-    console.log("createPost - 생성된 게시글 카테고리:", createdPost?.category);
+    logger.info(
+      `createPost - 생성된 게시글 카테고리: ${createdPost?.category}`
+    );
 
     res.status(HttpStatusCodes.CREATED).json(createdPost);
   } catch (error) {
@@ -222,6 +224,12 @@ export async function updatePostStatus(
   next: NextFunction
 ) {
   try {
+    logger.info("=== updatePostStatus 호출됨 ===");
+    logger.info(`Request method: ${req.method}`);
+    logger.info(`Request path: ${req.path}`);
+    logger.info(`Request params: ${JSON.stringify(req.params)}`);
+    logger.info(`Request body: ${JSON.stringify(req.body)}`);
+
     const { id } = req.params;
     const validatedData = parseReq<UpdatePostStatusReq>(updatePostStatusSchema)(
       req.body
