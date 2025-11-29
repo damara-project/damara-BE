@@ -111,13 +111,14 @@ export async function createPost(
     const validatedData = parseReq<CreatePostReq>(createPostSchema)(req.body);
     const { post } = validatedData;
 
-    // deadline을 Date 객체로 변환
-    const { images = [], deadline, ...postData } = post;
+    // deadline과 category를 명시적으로 처리
+    const { images = [], deadline, category, ...postData } = post;
 
     const createdPost = await PostService.createPost(
       {
         ...postData,
         deadline: new Date(deadline),
+        category: category || null,
       },
       images
     );
