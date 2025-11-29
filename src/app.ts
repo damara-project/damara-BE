@@ -150,11 +150,19 @@ if (ENV.NodeEnv === "development") {
     const routes: string[] = [];
     app._router?.stack?.forEach((middleware: any) => {
       if (middleware.route) {
-        routes.push(`${Object.keys(middleware.route.methods).join(", ").toUpperCase()} ${middleware.route.path}`);
+        routes.push(
+          `${Object.keys(middleware.route.methods).join(", ").toUpperCase()} ${
+            middleware.route.path
+          }`
+        );
       } else if (middleware.name === "router") {
         middleware.handle?.stack?.forEach((handler: any) => {
           if (handler.route) {
-            routes.push(`${Object.keys(handler.route.methods).join(", ").toUpperCase()} ${middleware.regexp.source}${handler.route.path}`);
+            routes.push(
+              `${Object.keys(handler.route.methods).join(", ").toUpperCase()} ${
+                middleware.regexp.source
+              }${handler.route.path}`
+            );
           }
         });
       }
