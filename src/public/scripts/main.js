@@ -231,6 +231,12 @@ function resetAllPostParticipationStatus() {
     btn.classList.remove("d-none");
   });
 
+  // 모든 관심 등록 버튼 표시
+  const allFavoriteBtns = document.querySelectorAll(".favorite-btn");
+  allFavoriteBtns.forEach((btn) => {
+    btn.classList.remove("d-none");
+  });
+
   // 모든 관리하기 버튼 숨기기
   const allManageBtns = document.querySelectorAll(".manage-post-btn");
   allManageBtns.forEach((btn) => {
@@ -305,9 +311,14 @@ function updatePostCardParticipationStatus(postId, isParticipant) {
   const cancelBtn = joinedContainer?.querySelector(
     `.cancel-join-post-btn[data-post-id="${postId}"]`
   );
+  const favoriteBtn = document.querySelector(
+    `.favorite-btn[data-post-id="${postId}"]`
+  );
 
   if (isParticipant) {
+    // 참여 중일 때: 참여하기 버튼과 관심 등록 버튼 숨기기, 참여취소 버튼만 표시
     if (joinBtn) joinBtn.classList.add("d-none");
+    if (favoriteBtn) favoriteBtn.classList.add("d-none");
     if (joinedContainer) {
       joinedContainer.classList.remove("d-none");
       if (cancelBtn && currentUser) {
@@ -315,7 +326,9 @@ function updatePostCardParticipationStatus(postId, isParticipant) {
       }
     }
   } else {
+    // 참여하지 않았을 때: 참여하기 버튼과 관심 등록 버튼 표시, 참여취소 버튼 숨기기
     if (joinBtn) joinBtn.classList.remove("d-none");
+    if (favoriteBtn) favoriteBtn.classList.remove("d-none");
     if (joinedContainer) joinedContainer.classList.add("d-none");
   }
 }
@@ -915,6 +928,12 @@ async function openPostDetail(postId) {
       return new Date(dateString).toLocaleString("ko-KR");
     };
 
+    const formatPriceDetail = (value) => {
+      const num = Number(value);
+      if (Number.isNaN(num)) return value;
+      return num.toLocaleString("ko-KR");
+    };
+
     const isAuthor =
       !!currentUser && !!currentUser.id && post.authorId === currentUser.id;
 
@@ -996,7 +1015,7 @@ async function openPostDetail(postId) {
           <div class="d-grid gap-2">
             <a href="${chatLink}"
                class="btn btn-info w-100 text-white fw-bold"
-               style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+               style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; min-height: 48px;">
               💬 채팅방 관리
             </a>
           </div>
@@ -1008,16 +1027,13 @@ async function openPostDetail(postId) {
         actionSection = `
           <div class="border-top pt-3 mt-3">
             <div class="joined-status-container" data-post-id="${post.id}">
-              <div class="d-flex align-items-center justify-content-center mb-3 p-2 rounded" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                <span class="text-white fw-bold">✓ 참여중</span>
-              </div>
               <div class="d-grid gap-2">
                 <a href="${chatLink}"
                    class="btn btn-info w-100 text-white fw-bold"
-                   style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+                   style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; min-height: 48px;">
                   💬 채팅방 입장
                 </a>
-                <button class="btn btn-outline-warning w-100 cancel-join-post-btn-detail" data-post-id="${post.id}" data-user-id="${currentUser.id}">
+                <button class="btn btn-outline-warning w-100 cancel-join-post-btn-detail" data-post-id="${post.id}" data-user-id="${currentUser.id}" style="min-height: 48px;">
                   참여취소
                 </button>
               </div>
@@ -1034,18 +1050,15 @@ async function openPostDetail(postId) {
 
         actionSection = `
           <div class="border-top pt-3 mt-3">
-            <button class="btn btn-success w-100 fw-bold join-post-btn-detail mb-2" data-post-id="${post.id}" style="font-size: 1.1rem; padding: 12px;">
+            <button class="btn btn-success w-100 fw-bold join-post-btn-detail mb-2" data-post-id="${post.id}" style="font-size: 1.1rem; padding: 12px; min-height: 48px;">
               참여하기
             </button>
-            <button class="btn ${favoriteBtnClass} w-100 favorite-btn mb-2" data-post-id="${post.id}">
+            <button class="btn ${favoriteBtnClass} w-100 favorite-btn mb-2" data-post-id="${post.id}" style="min-height: 48px;">
               ${favoriteBtnText}
             </button>
             <div class="d-none joined-status-container" data-post-id="${post.id}">
-              <div class="d-flex align-items-center justify-content-center mb-3 p-2 rounded" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                <span class="text-white fw-bold">✓ 참여중</span>
-              </div>
               <div class="d-grid gap-2">
-                <button class="btn btn-warning w-100 cancel-join-post-btn-detail" data-post-id="${post.id}">
+                <button class="btn btn-warning w-100 cancel-join-post-btn-detail" data-post-id="${post.id}" style="min-height: 48px;">
                   참여취소
                 </button>
               </div>
@@ -1060,9 +1073,9 @@ async function openPostDetail(postId) {
       <p class="mb-3">${post.content}</p>
       <div class="row mb-3">
         <div class="col-md-6">
-          <p><strong>가격:</strong> <span class="text-primary fs-4">${
+          <p><strong>가격:</strong> <span class="text-primary fs-4">${formatPriceDetail(
             post.price
-          }원</span></p>
+          )}원</span></p>
           <p><strong>상태:</strong> ${statusBadge}</p>
           <p><strong>최소 인원:</strong> ${post.minParticipants}명</p>
           <p><strong>현재 인원:</strong> ${post.currentQuantity}명</p>
@@ -1229,8 +1242,12 @@ document.addEventListener("click", async (e) => {
         const cancelBtn = joinedContainer?.querySelector(
           `.cancel-join-post-btn-detail[data-post-id="${postId}"]`
         );
+        const favoriteBtn = document.querySelector(
+          `.favorite-btn[data-post-id="${postId}"]`
+        );
 
         if (joinBtn) joinBtn.classList.add("d-none");
+        if (favoriteBtn) favoriteBtn.classList.add("d-none");
         if (joinedContainer) {
           joinedContainer.classList.remove("d-none");
           if (cancelBtn) {
@@ -1241,24 +1258,16 @@ document.addEventListener("click", async (e) => {
           const chatButtonHTML = chatRoomId
             ? `<a href="/chat?postId=${postId}&userId=${currentUser.id}&chatRoomId=${chatRoomId}" 
                    class="btn btn-info w-100 text-white fw-bold mb-2" 
-                   style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+                   style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; min-height: 48px;">
                   💬 채팅방 입장
                 </a>`
             : `<a href="/chat?postId=${postId}&userId=${currentUser.id}" 
                    class="btn btn-info w-100 text-white fw-bold mb-2" 
-                   style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+                   style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; min-height: 48px;">
                   💬 채팅방 입장
                 </a>`;
 
-          // 참여중 상태 표시 추가
-          const statusHTML = `<div class="d-flex align-items-center justify-content-center mb-3 p-2 rounded" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-            <span class="text-white fw-bold">✓ 참여중</span>
-          </div>`;
-
-          // 기존 내용을 유지하면서 채팅방 버튼과 상태 표시 추가
-          if (!joinedContainer.querySelector(".text-white.fw-bold")) {
-            joinedContainer.insertAdjacentHTML("afterbegin", statusHTML);
-          }
+          // 기존 내용을 유지하면서 채팅방 버튼 추가
           if (!joinedContainer.querySelector('a[href*="/chat"]')) {
             const cancelBtnParent = cancelBtn?.parentElement;
             if (cancelBtnParent) {
@@ -1278,8 +1287,12 @@ document.addEventListener("click", async (e) => {
       const cardCancelBtn = cardJoinedContainer?.querySelector(
         `.cancel-join-post-btn[data-post-id="${postId}"]`
       );
+      const cardFavoriteBtn = document.querySelector(
+        `.favorite-btn[data-post-id="${postId}"]`
+      );
 
       if (cardJoinBtn) cardJoinBtn.classList.add("d-none");
+      if (cardFavoriteBtn) cardFavoriteBtn.classList.add("d-none");
       if (cardJoinedContainer) {
         cardJoinedContainer.classList.remove("d-none");
         if (cardCancelBtn) {
@@ -1398,8 +1411,12 @@ document.addEventListener("click", async (e) => {
         const joinedContainer = document.querySelector(
           `.joined-status-container[data-post-id="${postId}"]`
         );
+        const favoriteBtn = document.querySelector(
+          `.favorite-btn[data-post-id="${postId}"]`
+        );
 
         if (joinBtn) joinBtn.classList.remove("d-none");
+        if (favoriteBtn) favoriteBtn.classList.remove("d-none");
         if (joinedContainer) joinedContainer.classList.add("d-none");
       }
 
@@ -1410,8 +1427,12 @@ document.addEventListener("click", async (e) => {
       const cardJoinedContainer = document.querySelector(
         `.joined-status-container[data-post-id="${postId}"]`
       );
+      const cardFavoriteBtn = document.querySelector(
+        `.favorite-btn[data-post-id="${postId}"]`
+      );
 
       if (cardJoinBtn) cardJoinBtn.classList.remove("d-none");
+      if (cardFavoriteBtn) cardFavoriteBtn.classList.remove("d-none");
       if (cardJoinedContainer) cardJoinedContainer.classList.add("d-none");
 
       // 게시글 목록 새로고침
@@ -1932,7 +1953,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
   // DOM이 완전히 로드될 때까지 약간의 지연 (template 요소가 로드되도록)
   setTimeout(() => {
-    // 초기 로드 (카테고리 필터 없이 전체 조회)
-    loadPosts();
+    // 초기 로드: 전체 카테고리 탭 상태로 조회
+    handleCategoryFilter("");
   }, 200);
 });

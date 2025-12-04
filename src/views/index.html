@@ -213,7 +213,7 @@
       </div>
 
       <!-- 상품 목록 헤더 -->
-      <div class="d-flex justify-content-between align-items-center mb-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
         <h2
           class="mb-0 fw-bold"
           style="font-size: 1.25rem; color: var(--text-primary)"
@@ -222,115 +222,195 @@
         </h2>
       </div>
 
+      <!-- 카테고리 탭 (탭형 버튼) -->
+      <div class="mb-4">
+        <ul class="nav nav-pills gap-2 flex-wrap">
+          <li class="nav-item">
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-primary category-filter-btn active"
+              data-category=""
+              onclick="handleCategoryFilter('')"
+            >
+              전체
+            </button>
+          </li>
+          <li class="nav-item">
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-primary category-filter-btn"
+              data-category="food"
+              onclick="handleCategoryFilter('food')"
+            >
+              🍔 먹거리
+            </button>
+          </li>
+          <li class="nav-item">
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-primary category-filter-btn"
+              data-category="daily"
+              onclick="handleCategoryFilter('daily')"
+            >
+              🏠 일상용품
+            </button>
+          </li>
+          <li class="nav-item">
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-primary category-filter-btn"
+              data-category="beauty"
+              onclick="handleCategoryFilter('beauty')"
+            >
+              💄 뷰티·패션
+            </button>
+          </li>
+          <li class="nav-item">
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-primary category-filter-btn"
+              data-category="electronics"
+              onclick="handleCategoryFilter('electronics')"
+            >
+              📱 전자기기
+            </button>
+          </li>
+          <li class="nav-item">
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-primary category-filter-btn"
+              data-category="school"
+              onclick="handleCategoryFilter('school')"
+            >
+              📚 학용품
+            </button>
+          </li>
+          <li class="nav-item">
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-primary category-filter-btn"
+              data-category="freemarket"
+              onclick="handleCategoryFilter('freemarket')"
+            >
+              🛒 프리마켓
+            </button>
+          </li>
+        </ul>
+      </div>
+
       <div class="alert alert-info border-0 shadow-sm mb-4" role="alert">
         목록이 보이지 않거나 업데이트되지 않는 경우 브라우저 새로고침(F5)을 한
         번 눌러 주세요.
       </div>
 
       <!-- 상품 목록 그리드 -->
-      <div id="posts-grid" class="row g-4">
-        <script id="posts-template" type="text/x-handlebars-template">
-          {{#each posts}}
-            <div class="col-md-6 col-lg-4">
-              <div class="card post-card h-100">
-                {{#if images}}
-                  <img
-                    src="{{images.0.imageUrl}}"
-                    alt="{{title}}"
-                    class="card-img-top post-image"
-                    style="height: 200px; object-fit: cover;"
-                  />
-                {{else}}
-                  <div class="card-img-top post-image-placeholder d-flex align-items-center justify-content-center">
-                    <span class="text-muted">이미지 없음</span>
-                  </div>
-                {{/if}}
-                <div class="card-body d-flex flex-column">
-                  <div class="d-flex justify-content-between align-items-start mb-2">
-                    <h5 class="card-title mb-0">{{title}}</h5>
-                    {{#if category}}
-                      <span class="badge category-badge" style="background-color: var(--primary); color: white; font-size: 0.75rem; padding: 0.25rem 0.5rem;">
-                        {{categoryName category}}
-                      </span>
-                    {{/if}}
-                  </div>
-                  <p class="card-text text-muted small flex-grow-1">
-                    {{truncate content 50}}
-                  </p>
-                  <div class="mb-2">
-                    <span class="badge
-                      {{#eq status 'open'}}bg-success{{/eq}}
-                      {{#eq status 'closed'}}bg-secondary{{/eq}}
-                      {{#eq status 'cancelled'}}bg-danger{{/eq}}
-                    ">
-                      {{#eq status 'open'}}모집중{{/eq}}
-                      {{#eq status 'closed'}}마감{{/eq}}
-                      {{#eq status 'cancelled'}}취소됨{{/eq}}
-                    </span>
-                  </div>
-                  <div class="mb-2">
-                    <strong class="text-primary fs-4"
-                      >{{formatPrice price}}원</strong
-                    >
-                  </div>
-                  <div class="small text-muted mb-2">
-                    <div>최소 인원: {{minParticipants}}명</div>
-                    <div>현재 인원: {{currentQuantity}}명</div>
-                    <div>마감일: {{formatDate deadline}}</div>
-                  </div>
-                  <div class="mt-auto">
-                    <!-- 작성자: 관리하기 버튼만 표시 -->
-                    <button
-                      class="btn btn-sm btn-outline-primary w-100 d-none manage-post-btn"
-                      data-post-id="{{id}}"
-                    >
-                      관리하기
-                    </button>
+      <div id="posts-grid" class="row g-4"></div>
 
-                    <!-- 일반 사용자: 상세보기, 참여하기, 관심 등록 -->
-                    <div class="d-none normal-user-actions" data-post-id="{{id}}">
+      <!-- 상품 목록 템플릿 (렌더링용, DOM에서 유지) -->
+      <script id="posts-template" type="text/x-handlebars-template">
+        {{#each posts}}
+          <div class="col-md-6 col-lg-4">
+            <div class="card post-card h-100">
+              {{#if images}}
+                <img
+                  src="{{images.0.imageUrl}}"
+                  alt="{{title}}"
+                  class="card-img-top post-image"
+                  style="height: 200px; object-fit: cover;"
+                />
+              {{else}}
+                <div class="card-img-top post-image-placeholder d-flex align-items-center justify-content-center">
+                  <span class="text-muted">이미지 없음</span>
+                </div>
+              {{/if}}
+              <div class="card-body d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <h5 class="card-title mb-0">{{title}}</h5>
+                  {{#if category}}
+                    <span class="badge category-badge" style="background-color: var(--primary); color: white; font-size: 0.75rem; padding: 0.25rem 0.5rem;">
+                      {{categoryName category}}
+                    </span>
+                  {{/if}}
+                </div>
+                <p class="card-text text-muted small flex-grow-1">
+                  {{truncate content 50}}
+                </p>
+                <div class="mb-2">
+                  <span class="badge
+                    {{#eq status 'open'}}bg-success{{/eq}}
+                    {{#eq status 'closed'}}bg-secondary{{/eq}}
+                    {{#eq status 'cancelled'}}bg-danger{{/eq}}
+                  ">
+                    {{#eq status 'open'}}모집중{{/eq}}
+                    {{#eq status 'closed'}}마감{{/eq}}
+                    {{#eq status 'cancelled'}}취소됨{{/eq}}
+                  </span>
+                </div>
+                <div class="mb-2">
+                  <strong class="text-primary fs-4"
+                    >{{formatPrice price}}원</strong
+                  >
+                </div>
+                <div class="small text-muted mb-2">
+                  <div>최소 인원: {{minParticipants}}명</div>
+                  <div>현재 인원: {{currentQuantity}}명</div>
+                  <div>마감일: {{formatDate deadline}}</div>
+                </div>
+                <div class="mt-auto">
+                  <!-- 작성자: 관리하기 버튼만 표시 -->
+                  <button
+                    class="btn btn-sm btn-outline-primary w-100 d-none manage-post-btn"
+                    data-post-id="{{id}}"
+                  >
+                    관리하기
+                  </button>
+
+                  <!-- 일반 사용자: 상세보기, 참여하기, 관심 등록 -->
+                  <div class="d-none normal-user-actions" data-post-id="{{id}}">
+                    <button
+                      class="btn btn-sm btn-primary w-100 mb-1 view-post-btn"
+                      data-post-id="{{id}}"
+                      style="min-height: 38px;"
+                    >
+                      상세보기
+                    </button>
+                    {{#eq status 'open'}}
                       <button
-                        class="btn btn-sm btn-primary w-100 mb-1 view-post-btn"
+                        class="btn btn-sm btn-success w-100 mb-1 join-post-btn"
                         data-post-id="{{id}}"
+                        style="min-height: 38px;"
                       >
-                        상세보기
+                        참여하기
                       </button>
-                      {{#eq status 'open'}}
+                      <div class="d-none joined-status-container" data-post-id="{{id}}">
                         <button
-                          class="btn btn-sm btn-success w-100 mb-1 join-post-btn"
+                          class="btn btn-sm btn-warning w-100 cancel-join-post-btn"
                           data-post-id="{{id}}"
+                          style="min-height: 38px;"
                         >
-                          참여하기
+                          참여취소
                         </button>
-                        <div class="d-none joined-status-container" data-post-id="{{id}}">
-                          <div class="text-center mb-2 text-success fw-bold small">참여중...</div>
-                          <button
-                            class="btn btn-sm btn-warning w-100 mb-1 cancel-join-post-btn"
-                            data-post-id="{{id}}"
-                          >
-                            참여취소
-                          </button>
-                        </div>
-                        <button
-                          class="btn btn-sm btn-outline-danger w-100 favorite-btn"
-                          data-post-id="{{id}}"
-                        >
-                          <span>🤍</span> 관심 등록
-                        </button>
-                      {{/eq}}
-                    </div>
+                      </div>
+                      <button
+                        class="btn btn-sm btn-outline-danger w-100 favorite-btn mb-1"
+                        data-post-id="{{id}}"
+                        style="min-height: 38px;"
+                      >
+                        <span>🤍</span> 관심 등록
+                      </button>
+                    {{/eq}}
                   </div>
                 </div>
               </div>
             </div>
-          {{/each}}
-          {{#unless posts}}
-            <div class="col-12 text-center py-5">
-              <p class="text-muted">등록된 상품이 없습니다.</p>
-            </div>
-          {{/unless}}
-        </script>
-      </div>
+          </div>
+        {{/each}}
+        {{#unless posts}}
+          <div class="col-12 text-center py-5">
+            <p class="text-muted">등록된 상품이 없습니다.</p>
+          </div>
+        {{/unless}}
+      </script>
     </div>
 
     <!-- 로그인 모달 -->
