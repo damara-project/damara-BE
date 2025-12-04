@@ -31,9 +31,10 @@ export const ChatRoomRepo = {
       }
       throw e;
     }
-  },  /**
+  }
+  /**
    * ID로 채팅방 조회
-   */
+   */,
   async findById(id: string) {
     const chatRoom = await ChatRoomModel.findByPk(id, {
       include: [
@@ -77,23 +78,36 @@ export const ChatRoomRepo = {
   /**
    * 사용자가 참여한 게시글의 채팅방 목록 조회
    * - PostParticipant를 통해 사용자가 참여한 게시글 찾기
+   * - 작성자가 작성한 게시글의 채팅방도 포함
    * - 각 게시글의 채팅방 찾기
    */
   async findByUserId(userId: string, limit = 20, offset = 0) {
     const { PostParticipantRepo } = await import("./PostParticipantRepo");
-    
+
     // 사용자가 참여한 게시글 목록 조회
     const participants = await PostParticipantRepo.findByUserId(userId);
-    const postIds = participants.map((p) => p.postId);
+    const participantPostIds = participants.map((p) => p.postId);
 
-    if (postIds.length === 0) {
+    // 작성자가 작성한 게시글 목록 조회
+    const authoredPosts = await PostModel.findAll({
+      where: { authorId: userId },
+      attributes: ["id"],
+    });
+    const authoredPostIds = authoredPosts.map((p) => p.id);
+
+    // 참여한 게시글 + 작성한 게시글 합치기 (중복 제거)
+    const allPostIds = [
+      ...new Set([...participantPostIds, ...authoredPostIds]),
+    ];
+
+    if (allPostIds.length === 0) {
       return [];
     }
 
     // 각 게시글의 채팅방 조회
     const chatRooms = await ChatRoomModel.findAll({
       where: {
-        postId: postIds,
+        postId: allPostIds,
       },
       include: [
         {
