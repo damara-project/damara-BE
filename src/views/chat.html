@@ -748,6 +748,27 @@
           console.error("Error parsing user from storage:", e);
         }
       }
+
+      // 로그아웃 버튼 동작 (홈과 동일하게 localStorage 정리 + 리다이렉트)
+      const logoutBtn = document.getElementById("logout-btn");
+      if (logoutBtn) {
+        logoutBtn.addEventListener("click", () => {
+          // 저장된 사용자 정보 제거
+          localStorage.removeItem("currentUser");
+
+          // 채팅방 연결 정리
+          if (socket && currentChatRoomId && currentUserId) {
+            socket.emit("leave_chat_room", {
+              chatRoomId: currentChatRoomId,
+              userId: currentUserId,
+            });
+            socket.disconnect();
+          }
+
+          // 홈으로 이동해서 공통 UI 초기화 로직 사용
+          window.location.href = "/";
+        });
+      }
     </script>
   </body>
 </html>

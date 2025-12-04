@@ -195,6 +195,27 @@ img {
   box-shadow: var(--shadow-md);
 }
 
+/* 마감/취소된 카드 스타일 */
+.post-card.closed,
+.post-card.cancelled {
+  opacity: 0.85;
+  position: relative;
+}
+
+.post-card.closed::before,
+.post-card.cancelled::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.05);
+  pointer-events: none;
+  z-index: 1;
+  border-radius: var(--radius-md);
+}
+
 .post-image,
 .post-image-placeholder {
   height: 194px;
@@ -210,6 +231,12 @@ img {
   color: var(--text-tertiary);
   font-size: 0.875rem;
   font-weight: 400;
+}
+
+/* 마감/취소된 게시글 이미지 스타일 */
+.post-image-closed,
+.post-image-cancelled {
+  opacity: 0.6;
 }
 
 .post-card .card-title {

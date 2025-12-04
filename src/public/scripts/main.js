@@ -454,9 +454,20 @@ async function loadPosts(category = null) {
         }
       }
     } else {
-      // 로그인하지 않은 사용자: 모든 게시글에 일반 사용자 액션 표시
+      // 로그인하지 않은 사용자:
+      // - 작성자가 아닌 카드들을 일반 사용자 모드로 표시하되
+      // - 참여 버튼만 숨기고, 클릭 시에는 로그인 모달을 통해 강제 로그인 유도
       posts.forEach((post) => {
+        // 비작성자 카드 UI로 설정
         updatePostCardForAuthor(post.id, false);
+
+        // 참여 버튼은 비로그인 시 숨김
+        const joinBtn = document.querySelector(
+          `.join-post-btn[data-post-id="${post.id}"]`
+        );
+        if (joinBtn) {
+          joinBtn.classList.add("d-none");
+        }
       });
     }
   } catch (error) {
@@ -1114,7 +1125,17 @@ async function openPostDetail(postId) {
 }
 
 document.addEventListener("click", async (e) => {
+  // 상세보기 버튼: 비로그인 시 로그인 강제, 로그인 시에만 상세 모달 오픈
   if (e.target.classList.contains("view-post-btn")) {
+    if (!currentUser) {
+      showToast("로그인이 필요합니다.", "warning");
+      const loginModalEl = document.getElementById("loginModal");
+      if (loginModalEl) {
+        const loginModal = new bootstrap.Modal(loginModalEl);
+        loginModal.show();
+      }
+      return;
+    }
     const postId = e.target.getAttribute("data-post-id");
     await openPostDetail(postId);
   }
