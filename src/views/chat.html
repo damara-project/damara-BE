@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>실시간 채팅</title>
+    <link rel="icon" type="image/png" href="/uploads/images/TE.png" />
     <link rel="stylesheet" type="text/css" href="/stylesheets/main.css" />
 
     <!-- Socket.io -->
@@ -58,7 +59,7 @@
               <button
                 class="btn btn-link nav-link p-0"
                 id="login-modal-btn"
-                style="text-decoration: none;"
+                style="text-decoration: none"
               >
                 로그인
               </button>
@@ -69,21 +70,24 @@
               </button>
             </li>
             <li class="nav-item">
-              <span id="current-user-display" class="d-none d-flex align-items-center gap-2">
+              <span
+                id="current-user-display"
+                class="d-none d-flex align-items-center gap-2"
+              >
                 <span
                   id="user-nickname-display"
                   class="fw-semibold"
-                  style="color: var(--text-strong);"
+                  style="color: var(--text-strong)"
                 ></span>
                 <span
                   id="trust-score-display"
                   class="badge bg-success d-none"
-                  style="font-size: 0.75rem;"
+                  style="font-size: 0.75rem"
                 ></span>
                 <button
                   class="btn btn-sm btn-outline-secondary"
                   id="logout-btn"
-                  style="border-radius: var(--radius-sm);"
+                  style="border-radius: var(--radius-sm)"
                 >
                   로그아웃
                 </button>
@@ -95,7 +99,9 @@
     </nav>
 
     <div class="container chat-shell py-4">
-      <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+      <div
+        class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2"
+      >
         <div>
           <h1 class="section-title mb-0">실시간 채팅</h1>
           <p class="section-subtitle mb-0">
@@ -103,13 +109,16 @@
           </p>
         </div>
         <div class="chip">
-          <span class="connection-status disconnected" id="connection-status"></span>
+          <span
+            class="connection-status disconnected"
+            id="connection-status"
+          ></span>
           <span id="connection-text">연결 중...</span>
         </div>
       </div>
 
       <!-- 채팅방 목록 (로그인한 사용자만 표시) -->
-      <div id="chat-rooms-section" class="mb-4" style="display: none;">
+      <div id="chat-rooms-section" class="mb-4" style="display: none">
         <h3 class="mb-3">내 채팅방 목록</h3>
         <div id="chat-rooms-list" class="row g-3">
           <!-- 채팅방 목록이 여기에 표시됨 -->
@@ -337,7 +346,11 @@
       // 메시지 표시
       function displayMessage(message, skipDuplicateCheck = false) {
         // 중복 메시지 체크 (히스토리 로딩 중이 아닐 때만)
-        if (!skipDuplicateCheck && message.id && displayedMessageIds.has(message.id)) {
+        if (
+          !skipDuplicateCheck &&
+          message.id &&
+          displayedMessageIds.has(message.id)
+        ) {
           console.log("중복 메시지 무시:", message.id);
           return;
         }
@@ -365,7 +378,7 @@
         messageDiv.className = `message-item ${
           message.senderId === currentUserId ? "own-message" : "other-message"
         }`;
-        
+
         // 메시지 ID를 data 속성으로 저장 (나중에 참조 가능)
         if (message.id) {
           messageDiv.setAttribute("data-message-id", message.id);
@@ -415,7 +428,7 @@
             const messages = await response.json();
             chatMessages.innerHTML = "";
             displayedMessageIds.clear(); // 히스토리 로드 시 ID 세트 초기화
-            
+
             // 메시지를 시간순으로 정렬하여 표시
             messages.forEach((message) => {
               displayMessage(message, true); // 히스토리 로딩 중이므로 중복 체크 스킵
@@ -523,7 +536,8 @@
                 '[data-message-id^="temp-"]'
               );
               tempMessages.forEach((tempMsg) => {
-                const tempContent = tempMsg.querySelector(".message-content")?.textContent;
+                const tempContent =
+                  tempMsg.querySelector(".message-content")?.textContent;
                 if (tempContent === message.content) {
                   tempMsg.remove();
                   const tempId = tempMsg.getAttribute("data-message-id");
@@ -599,7 +613,8 @@
           const roomsSection = document.getElementById("chat-rooms-section");
 
           if (chatRooms.length === 0) {
-            roomsList.innerHTML = '<div class="col-12"><p class="text-muted text-center">참여한 채팅방이 없습니다.</p></div>';
+            roomsList.innerHTML =
+              '<div class="col-12"><p class="text-muted text-center">참여한 채팅방이 없습니다.</p></div>';
             if (roomsSection) roomsSection.style.display = "block";
             return;
           }
@@ -612,19 +627,35 @@
                 <div class="card-body">
                   <h6 class="card-title">${room.post?.title || "제목 없음"}</h6>
                   <p class="card-text small text-muted">
-                    ${room.lastMessage ? room.lastMessage.content : "메시지 없음"}
+                    ${
+                      room.lastMessage
+                        ? room.lastMessage.content
+                        : "메시지 없음"
+                    }
                   </p>
                   <div class="d-flex justify-content-between align-items-center">
                     <small class="text-muted">
-                      ${room.lastMessage ? new Date(room.lastMessage.createdAt).toLocaleString("ko-KR") : ""}
+                      ${
+                        room.lastMessage
+                          ? new Date(room.lastMessage.createdAt).toLocaleString(
+                              "ko-KR"
+                            )
+                          : ""
+                      }
                     </small>
-                    ${room.unreadCount > 0 ? `<span class="badge bg-danger">${room.unreadCount}</span>` : ""}
+                    ${
+                      room.unreadCount > 0
+                        ? `<span class="badge bg-danger">${room.unreadCount}</span>`
+                        : ""
+                    }
                   </div>
                 </div>
                 <div class="card-footer">
                   <button
                     class="btn btn-sm btn-primary w-100"
-                    onclick="enterChatRoom('${room.id}', '${userId}', '${room.post?.title || ""}')"
+                    onclick="enterChatRoom('${room.id}', '${userId}', '${
+                room.post?.title || ""
+              }')"
                   >
                     채팅방 입장
                   </button>
@@ -645,13 +676,12 @@
       function enterChatRoom(chatRoomId, userId, postTitle) {
         document.getElementById("chat-room-id").value = chatRoomId;
         document.getElementById("user-id").value = userId;
-        document.getElementById("chat-room-title").textContent = postTitle || "채팅방";
+        document.getElementById("chat-room-title").textContent =
+          postTitle || "채팅방";
         document.getElementById("join-room-btn").click();
       }
 
-      // URL에서 userId 가져오기
-      const urlParams = new URLSearchParams(window.location.search);
-      const urlUserId = urlParams.get("userId");
+      // URL에서 userId 가져오기 (위에서 이미 파싱한 urlUserId 재사용)
       if (urlUserId) {
         loadChatRooms(urlUserId);
         document.getElementById("user-id").value = urlUserId;

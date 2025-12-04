@@ -25,6 +25,24 @@ authRouter.post(
 );
 
 /**
+ * Kakao 로그인
+ * GET /auth/kakao
+ */
+authRouter.get("/kakao", passport.authenticate("kakao"));
+
+/**
+ * Kakao 콜백
+ * GET /auth/kakao/callback
+ */
+authRouter.get(
+  "/kakao/callback",
+  passport.authenticate("kakao", {
+    successRedirect: "/",
+    failureRedirect: "/auth/login?error=kakao",
+  })
+);
+
+/**
  * 로그아웃
  * POST /auth/logout
  */
@@ -42,5 +60,6 @@ authRouter.post("/logout", (req, res, next) => {
 });
 
 export default authRouter;
+
 
 

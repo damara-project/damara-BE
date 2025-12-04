@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>명지대학교 공동구매 플랫폼</title>
+    <link rel="icon" type="image/png" href="/uploads/images/TE.png" />
     <link rel="stylesheet" type="text/css" href="/stylesheets/main.css" />
 
     <!-- Handlebars -->
@@ -345,9 +346,15 @@
             ></button>
           </div>
           <div class="modal-body">
-            <form id="login-form">
+            <p class="text-muted small mb-3">
+              학번으로 직접 로그인하거나, 카카오 계정으로 간편 로그인할 수
+              있어요.
+            </p>
+
+            <!-- 기존 학번 로그인 폼 -->
+            <form id="login-form" class="mb-3">
               <div class="mb-3">
-                <label class="form-label">학번</label>
+                <label class="form-label">학번 로그인</label>
                 <input
                   type="text"
                   class="form-control"
@@ -369,12 +376,33 @@
               </div>
               <button
                 type="submit"
-                class="btn btn-primary w-100"
+                class="btn btn-primary w-100 mb-2"
                 id="login-submit-btn"
               >
-                로그인
+                학번으로 로그인
               </button>
             </form>
+
+            <div class="d-flex align-items-center my-3">
+              <hr class="flex-grow-1" />
+              <span class="mx-2 text-muted small">또는</span>
+              <hr class="flex-grow-1" />
+            </div>
+
+            <!-- 카카오 로그인 버튼 -->
+            <button
+              type="button"
+              class="btn w-100"
+              style="
+                background-color: #fee500;
+                color: #191600;
+                font-weight: 600;
+                border: none;
+              "
+              onclick="window.location.href='/auth/kakao';"
+            >
+              카카오 계정으로 로그인
+            </button>
           </div>
         </div>
       </div>
@@ -683,14 +711,7 @@
               </div>
               <div style="font-size: 0.8125rem; color: var(--text-tertiary); margin-bottom: 0.75rem;">
                 <div>상태:
-                  <span class="badge"
-                    style="
-                      {{#eq post.status 'open'}}background-color: var(--success);{{/eq}}
-                      {{#eq post.status 'closed'}}background-color: var(--gray-500);{{/eq}}
-                      {{#eq post.status 'cancelled'}}background-color: var(--danger);{{/eq}}
-                      color: white; font-size: 0.75rem;
-                    "
-                  >
+                  <span class="badge {{#eq post.status 'open'}}bg-success{{/eq}}{{#eq post.status 'closed'}}bg-secondary{{/eq}}{{#eq post.status 'cancelled'}}bg-danger{{/eq}}" style="color: white; font-size: 0.75rem;">
                     {{#eq post.status 'open'}}모집중{{/eq}}
                     {{#eq post.status 'closed'}}마감{{/eq}}
                     {{#eq post.status 'cancelled'}}취소됨{{/eq}}
@@ -714,6 +735,6 @@
       {{/each}}
     </script>
 
-    <script src="scripts/main.js"></script>
+    <script src="/scripts/main.js"></script>
   </body>
 </html>
