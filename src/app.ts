@@ -8,6 +8,8 @@ import express from "express";
 import { Request, Response, NextFunction } from "express";
 import path from "path";
 import morgan from "morgan";
+import session from "express-session";
+import passport from "passport";
 import logger from "jet-logger";
 import BaseRouter from "./routes";
 import Paths from "./common/constants/Paths";
@@ -16,6 +18,8 @@ import { RouteError } from "./common/util/route-errors";
 import { sequelize } from "./db";
 import { setupSwagger } from "./config/swagger";
 import ENV from "./common/constants/ENV";
+import authRouter from "./routes/auth/AuthRoutes";
+import "./config/passport";
 
 // 모든 모델을 import하여 Sequelize가 테이블을 인식하도록 함
 import "./models/User";
@@ -87,6 +91,28 @@ app.use(express.urlencoded({ extended: true }));
 
 /**
  * ---------------------------------------------------------------------------
+ * Session & Passport
+ * ---------------------------------------------------------------------------
+ * - 세션 기반 로그인(Local, Kakao)을 위해 express-session과 Passport를 초기화한다.
+ * - 기존 /api/users/login JSON API는 그대로 두고, /auth/* 라우트에서 세션 로그인 사용.
+ */
+app.use(
+  session({
+    secret: ENV.DbName || "damara-secret", // TODO: 전용 SESSION_SECRET로 분리 추천
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      maxAge: 1000 * 60 * 60, // 1시간
+    },
+  })
+);
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+/**
+ * ---------------------------------------------------------------------------
  * Static Files
  * ---------------------------------------------------------------------------
  */
@@ -114,6 +140,14 @@ app.get("/chat", (_: Request, res: Response) => {
 app.get("/", (_: Request, res: Response) => {
   return res.sendFile("index.html", { root: viewsDir });
 });
+
+/**
+ * ---------------------------------------------------------------------------
+ * Auth Routes (Passport 기반 세션 로그인)
+ * ---------------------------------------------------------------------------
+ * - /auth/login, /auth/logout 등의 웹 로그인 전용 라우트
+ */
+app.use("/auth", authRouter);
 
 /**
  * ---------------------------------------------------------------------------

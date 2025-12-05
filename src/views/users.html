@@ -5,6 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>회원 관리</title>
+    <link rel="icon" type="image/png" href="/uploads/images/TE.png" />
     <link rel="stylesheet" type="text/css" href="/stylesheets/main.css" />
     <link rel="stylesheet" type="text/css" href="/stylesheets/users.css" />
 
@@ -30,7 +31,7 @@
     <nav class="navbar navbar-expand-lg app-nav mb-4">
       <div class="container">
         <a class="navbar-brand" href="/">
-          <span class="brand-text">Damara</span>
+          <span class="brand-text">Thomas Anderson</span>
         </a>
         <button
           class="navbar-toggler"
@@ -61,7 +62,7 @@
               <button
                 class="btn btn-link nav-link p-0"
                 id="login-modal-btn"
-                style="text-decoration: none;"
+                style="text-decoration: none"
               >
                 로그인
               </button>
@@ -72,21 +73,24 @@
               </button>
             </li>
             <li class="nav-item">
-              <span id="current-user-display" class="d-none d-flex align-items-center gap-2">
+              <span
+                id="current-user-display"
+                class="d-none d-flex align-items-center gap-2"
+              >
                 <span
                   id="user-nickname-display"
                   class="fw-semibold"
-                  style="color: var(--text-strong);"
+                  style="color: var(--text-strong)"
                 ></span>
                 <span
                   id="trust-score-display"
                   class="badge bg-success d-none"
-                  style="font-size: 0.75rem;"
+                  style="font-size: 0.75rem"
                 ></span>
                 <button
                   class="btn btn-sm btn-outline-secondary"
                   id="logout-btn"
-                  style="border-radius: var(--radius-sm);"
+                  style="border-radius: var(--radius-sm)"
                 >
                   로그아웃
                 </button>
@@ -101,7 +105,8 @@
       <div class="users-hero">
         <h1>회원 관리</h1>
         <p class="mb-0 text-muted">
-          신규 회원을 등록하거나 모든 유저 목록을 확인하고 수정·삭제할 수 있어요.
+          신규 회원을 등록하거나 모든 유저 목록을 확인하고 수정·삭제할 수
+          있어요.
         </p>
       </div>
 
@@ -197,7 +202,9 @@
 
       <!-- 회원 목록 -->
       <section class="section-block">
-        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <div
+          class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2"
+        >
           <div>
             <p class="section-subtitle mb-1">STEP 2</p>
             <h2 class="section-title">회원 목록</h2>

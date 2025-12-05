@@ -59,6 +59,9 @@ const envSchema = z.object({
     .string()
     .optional()
     .transform((val) => val === "true"),
+
+  KAKAO_CLIENT_ID: z.string().min(1, "KAKAO_CLIENT_ID is required"),
+  KAKAO_CALLBACK_URL: z.string().url().optional().default("http://localhost:3000/auth/kakao/callback"),
 });
 
 // 실제 환경 변수 파싱
@@ -74,6 +77,9 @@ const parsed = envSchema.parse({
 
   API_BASE_URL: process.env.API_BASE_URL,
   DB_FORCE_SYNC: process.env.DB_FORCE_SYNC,
+
+  KAKAO_CLIENT_ID: process.env.KAKAO_CLIENT_ID,
+  KAKAO_CALLBACK_URL: process.env.KAKAO_CALLBACK_URL,
 });
 
 // 최종 ENV 객체
@@ -89,6 +95,9 @@ const ENV = {
 
   ApiBaseUrl: parsed.API_BASE_URL || `http://localhost:${parsed.PORT}`,
   DbForceSync: parsed.DB_FORCE_SYNC ?? false,
+
+  KakaoClientId: parsed.KAKAO_CLIENT_ID,
+  KakaoCallbackUrl: parsed.KAKAO_CALLBACK_URL,
 };
 
 /******************************************************************************
