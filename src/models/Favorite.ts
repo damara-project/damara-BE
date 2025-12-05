@@ -122,4 +122,3 @@ UserModel.belongsToMany(PostModel, {
 });
 
 export default FavoriteModel;
-

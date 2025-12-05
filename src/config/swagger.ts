@@ -12,7 +12,7 @@ const options: swaggerJsdoc.Options = {
   definition: {
     openapi: "3.0.0",
     info: {
-      title: "Damara BE API",
+      title: "Thomas Anderson API",
       version: "1.0.0",
       description:
         "공동구매 플랫폼 API 문서. TypeScript + Express + Sequelize + MySQL로 구현되었습니다.",
